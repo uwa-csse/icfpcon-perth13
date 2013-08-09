@@ -1,4 +1,5 @@
 import json, requests, os.path
+from time import sleep
 
 _USER_ID = '0357TH6LX4rVbuVBCIBqeCcHznBDyL8ce5uduB69'
 _URL = 'http://icfpc2013.cloudapp.net/%s?auth=%svpsH1H'
@@ -122,6 +123,7 @@ class Server(object):
         elif r.status_code == 413:
             raise RequestInvalidException('Request too big')
         elif r.status_code == 429:
-            raise TryAgainLaterException('Try again later')
+            sleep(0.5)
+            return self._request(command, request_body)
         else:
             raise TryAgainLaterException('Unexpected error')
