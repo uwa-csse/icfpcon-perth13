@@ -25,10 +25,12 @@ requests, `eval` or `guess`, to stdout.
 
 #### Eval
 **Request**
+
     eval
     <input-list>
 
 **Response**
+
 	<output-list>
     done
 
@@ -36,10 +38,12 @@ where `input-list` and `output-list` are a space seperated list of 64-bit vector
 
 #### Guess
 **Request**
+
     guess
     <program>
     
 **Response**
+
     win|lose
     <input> <ouput>
 
