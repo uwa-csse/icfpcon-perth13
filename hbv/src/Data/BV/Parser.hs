@@ -28,24 +28,28 @@ parseProg :: B.ByteString -> Either String Prog
 parseProg bs = case el of
     Left err -> Left err
     Right l  -> case fromLisp (fixIdents l) of
-      Error err -> Left $ err ++ (show (fixIdents l))
+      Error err -> Left $ err ++ ": " ++ show (fixIdents l)
       Success p -> Right p
   where
     el :: Either String Lisp
     el = A.parseOnly (lisp <* A.endOfInput) (B.toStrict bs)
 
 fixIdents :: Lisp -> Lisp
-fixIdents l = replace (nub $ idents l) l
+fixIdents l = replaceIdents (nub $ idents l) l
   where
-    replace (x:_)     (Symbol s) | s == x = Symbol "x"
-    replace (_:y:_)   (Symbol s) | s == y = Symbol "y"
-    replace (_:_:z:_) (Symbol s) | s == z = Symbol "z"
-    replace vs        (List xs)           = List $ map (replace vs) xs
-    replace _         x                   = x
-
     idents (Symbol x) | "x_" `T.isPrefixOf` x = [x]
     idents (List xs)                          = concatMap idents xs
     idents _                                  = []
+
+replaceIdents :: [T.Text] -> Lisp -> Lisp
+replaceIdents = go
+  where
+    go (x:_)     (Symbol s) | s == x = Symbol "x"
+    go (_:y:_)   (Symbol s) | s == y = Symbol "y"
+    go (_:_:z:_) (Symbol s) | s == z = Symbol "z"
+    go vs        (List xs)           = List $ map (go vs) xs
+    go _         x                   = x
+
 
 instance IsString Prog where
     fromString s = case parseProg (B.pack s) of
@@ -70,6 +74,9 @@ instance FromLisp Expr where
 
     parseLisp (List [Symbol "fold", e0, e1, List [Symbol "lambda", List [Symbol "y", Symbol "z"], e2]]) =
         Fold <$> parseLisp e0 <*> parseLisp e1 <*> parseLisp e2
+
+    parseLisp (List [Symbol "fold", e0, e1, List [Symbol "lambda", List [Symbol "x", Symbol "y"], e2]]) =
+        Fold <$> parseLisp e0 <*> parseLisp e1 <*> parseLisp (replaceIdents ["","x","y"] e2)
 
     parseLisp e = Id <$> parseLisp e
               <|> struct "if0" If0 e

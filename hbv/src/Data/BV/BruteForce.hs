@@ -22,12 +22,14 @@ allProgs (Problem sz ops ios) =
 
     checkSize p = progSize p == sz
 
-    checkOps (Prog e) = findOps e `opsEq` ops
+    checkOps p = findProgOps p `opsEq` ops
 
 -- O(scary)
 allExprs :: Size -> [Op] -> [Id] -> [Expr]
-allExprs sz ops ids | sz <= 0   = []
-                    | otherwise = es'
+allExprs sz ops ids
+    | sz <= 0           = []
+    | OTFold `elem` ops = filter ok s5
+    | otherwise         = es'
   where
     es  = filter ok $ s1 ++ s2 ++ s3 ++ s4 ++ s5
     es' = nubBy exprEquiv es
@@ -42,8 +44,10 @@ allExprs sz ops ids | sz <= 0   = []
     s4 = catMaybes [mif   o p t f | p <- exprs 3, t <- exprs 3, f <- exprs 3, o <- ops]
     s5 = catMaybes [mfold o a b c | a <- fxprs 4, b <- fxprs 4, c <- fxprs 4, o <- ops]
 
-    exprs n = allExprs (sz-n) ops ids
-    fxprs n = allExprs (sz-n) ops (ids ++ [Y,Z])
+    exprs n = allExprs (sz-n) ops' ids
+    fxprs n = allExprs (sz-n) ops' (ids ++ [Y,Z])
+
+    ops' = filter (/= OTFold) ops
 
 exprEquiv :: Expr -> Expr -> Bool
 exprEquiv e0 e1 | eq        = True
@@ -70,6 +74,7 @@ mif OIf0 p t f = Just (If0 p t f)
 mif _ _ _ _    = Nothing
 
 mfold :: Op -> Expr -> Expr -> Expr -> Maybe Expr
+mfold OTFold e0 e1 e2 = Just (Fold e0 e1 e2)
 mfold OFold  e0 e1 e2 = Just (Fold e0 e1 e2)
 mfold _ _ _ _         = Nothing
 
@@ -90,6 +95,10 @@ noVars (Op1 _ e0)      = noVars e0
 noVars (Op2 _ e0 e1)   = noVars e0 && noVars e1
 noVars (If0 e0 e1 e2)  = noVars e0 && noVars e1 && noVars e2
 noVars (Fold e0 e1 e2) = noVars e0 && noVars e1 && noVars e2
+
+findProgOps :: Prog -> [Op]
+findProgOps (Prog (Fold e0 e1 e2)) = [OTFold] ++ findOps e0 ++ findOps e1 ++ findOps e2
+findProgOps (Prog e)               = findOps e
 
 findOps :: Expr -> [Op]
 findOps Zero            = []

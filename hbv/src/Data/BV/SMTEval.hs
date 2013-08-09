@@ -1,6 +1,7 @@
 module Data.BV.SMTEval (
       Vars(..)
     , progEquiv
+    , progEquivInfo
     , evalProg
     , evalExpr
     ) where
@@ -17,15 +18,18 @@ data Vars = Vars SWord64 SWord64 SWord64
   deriving (Show)
 
 progEquiv :: Prog -> Prog -> Bool
-progEquiv p0 p1 = unsafePerformIO (progEquivIO p0 p1)
+progEquiv p0 p1 = unsafePerformIO (progEquivIO toBool p0 p1)
+  where
+    toBool t = case t of
+      ThmResult (Unsatisfiable _) -> True
+      ThmResult (Satisfiable _ _) -> False
+      _                           -> error $ "progEquiv: " ++ show t
 
-progEquivIO :: Prog -> Prog -> IO Bool
-progEquivIO p0 p1 = do
-    t@(ThmResult r) <- prove equiv
-    case r of
-      Unsatisfiable _ -> return True
-      Satisfiable _ _ -> return False
-      _               -> error $ "progEquiv: " ++ show t
+progEquivInfo :: Prog -> Prog -> String
+progEquivInfo p0 p1 = unsafePerformIO (progEquivIO show p0 p1)
+
+progEquivIO :: (ThmResult -> a) -> Prog -> Prog -> IO a
+progEquivIO f p0 p1 = f `fmap` prove equiv
   where
     equiv = forAll ["x"] $ \x -> evalProg p0 x .== evalProg p1 x
 
