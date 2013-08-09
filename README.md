@@ -1,27 +1,20 @@
 # ICFP 2013 Programming Contest
 
 ## Parts
-### Solvers
-Our solvers are the meaty bits, writen in F#, Haskell, etc. They will be given the metadata for a
-problem and try to come up with a plan for solving it within 5 minutes. When they have a plan, they
-will enact the plan by sending `eval` and `guess` requests to stdout and reading the responses
-from stdin.
-
 ### Glue
-We have a python script that translates between the API and our solvers.
+We have a python script that translates between the web API and our solvers.
 
-### Glue <-> Solver interface
-*Not yet final*
+### Solvers
+Our solvers are the meaty bits, writen in F#, Haskell, etc. 
 
-A running instance of a solver works on one problem. The problem description is passed as command
-line arguments:
+#### Eval mode
+The solver expects the first line to be a program to compile, and every following line to be a set of arguments
+to evaluate using the program.
 
-    solver <size> <op> [<op> ...]
-
-where `size` is the size of the program and `op` is an op that is present in the program.
-
-When a solver has a plan that will determine the answer to the problem it may start sending
-requests, `eval` or `guess`, to stdout.
+#### Solve mode
+They will be given the metadata for a problem and try to come up with a plan for solving it within 5
+minutes. When they have a plan, they will enact the plan by sending `eval` and `guess` requests to
+stdout and reading the responses from stdin.
 
 #### Eval
 **Request**
