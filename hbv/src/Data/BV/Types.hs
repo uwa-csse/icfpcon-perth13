@@ -40,8 +40,11 @@ data Op2 = And | Or | Xor | Plus
 
 ------------------------------------------------------------------------
 
-data Problem = Problem Size [Op] [(Word64, Word64)]
-  deriving (Eq, Show)
+data Problem = Problem {
+      pSize :: Size
+    , pOps  :: [Op]
+    , pIO   :: [(Word64, Word64)]
+    } deriving (Eq, Show)
 
 type Size = Int
 

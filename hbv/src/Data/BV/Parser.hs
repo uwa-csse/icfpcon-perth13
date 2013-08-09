@@ -14,6 +14,7 @@ import           Data.AttoLisp (lisp, fromLisp, parseLisp, struct, typeMismatch)
 import qualified Data.Attoparsec.ByteString.Lazy as A
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.List (nub)
+import           Data.String (IsString(..))
 import qualified Data.Text as T
 
 import           Data.BV.Types
@@ -43,6 +44,11 @@ fixIdents l = replace (nub $ idents l) l
     idents (Symbol x) | "x_" `T.isPrefixOf` x = [x]
     idents (List xs)                          = concatMap idents xs
     idents _                                  = []
+
+instance IsString Prog where
+    fromString s = case parseProg (B.pack s) of
+      Left err -> error $ "fromString: cannot parse program: " ++ err
+      Right p  -> p
 
 instance FromLisp Prog where
     parseLisp = struct "lambda" prog

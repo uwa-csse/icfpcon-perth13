@@ -12,6 +12,7 @@ import           Numeric (showHex)
 import           System.Console.CmdArgs
 
 import           Data.BV
+import qualified Data.BV.SMT as SMT
 import           Data.BV.Test (checkProps)
 
 ------------------------------------------------------------------------
@@ -67,5 +68,7 @@ evalStdin = do
 
 smtStdin :: IO ()
 smtStdin = do
-    inp <- B.getContents
-    print (readProblem inp)
+    p <- readProblem <$> B.getContents
+    print p
+    putStrLn "======="
+    print (SMT.solve p)
