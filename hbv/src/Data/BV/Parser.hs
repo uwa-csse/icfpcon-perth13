@@ -104,11 +104,20 @@ readOp "plus"  = O2 Plus
 readOp "if0"   = OIf0
 readOp "tfold" = OTFold
 readOp "fold"  = OFold
+readOp op      = error $ "readOp: unknown operator: " ++ B.unpack op
 
 readProblem :: B.ByteString -> Problem
-readProblem bs = case B.words bs of
-  (x:xs) -> Problem (read (B.unpack x)) (map readOp xs)
-  _      -> Problem 0 []
+readProblem bs = case B.lines bs of
+    []     -> error "readProblem: no input"
+    (x:xs) -> prob x (map io xs)
+  where
+    prob line = case B.words line of
+        (x:xs) -> Problem (read (B.unpack x)) (map readOp xs)
+        _      -> error $ "readProblem: could not read size/ops: " ++ B.unpack line
+
+    io line = case B.words line of
+        (i:o:_) -> (read $ B.unpack i, read $ B.unpack o)
+        _       -> error $ "readProblem: could not read input/output pair: " ++ B.unpack line
 
 ------------------------------------------------------------------------
 -- Pretty Printing

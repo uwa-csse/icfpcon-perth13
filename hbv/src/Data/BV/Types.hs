@@ -12,6 +12,8 @@ module Data.BV.Types (
     , size
     ) where
 
+import Data.Word (Word64)
+
 ------------------------------------------------------------------------
 -- Types
 
@@ -38,7 +40,7 @@ data Op2 = And | Or | Xor | Plus
 
 ------------------------------------------------------------------------
 
-data Problem = Problem Size [Op]
+data Problem = Problem Size [Op] [(Word64, Word64)]
   deriving (Eq, Show)
 
 type Size = Int

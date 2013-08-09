@@ -20,9 +20,9 @@ main :: IO ()
 main = do
     args <- cmdArgs hbvArgs
     case hbvMode args of
-      Eval  -> evalStdin
-      Solve -> solveStdin
-      QC    -> checkProps
+      Eval -> evalStdin
+      SMT  -> smtStdin
+      QC   -> checkProps
 
 ------------------------------------------------------------------------
 
@@ -30,13 +30,13 @@ data HbvArgs = HbvArgs {
     hbvMode  :: HbvMode
   } deriving (Show, Data, Typeable)
 
-data HbvMode = Eval | Solve | QC
+data HbvMode = Eval | SMT | QC
   deriving (Show, Data, Typeable)
 
 hbvArgs = HbvArgs {
-    hbvMode = enum [ Eval  &= help "Evaluate program from stdin (default)"
-                   , Solve &= help "Solve problem from stdin"
-                   , QC    &= help "QuickCheck self test"
+    hbvMode = enum [ Eval &= help "Evaluate program from stdin (default)"
+                   , SMT  &= help "Solve problem from stdin using SMT solver"
+                   , QC   &= help "QuickCheck self test"
                    ]
   } &= summary "HBV v0.1"
 
@@ -65,9 +65,7 @@ evalStdin = do
 
 ------------------------------------------------------------------------
 
-solveStdin :: IO ()
-solveStdin = do
-    inp <- B.lines <$> B.getContents
-    case inp of
-      []     -> putStrLn "hbv: no input"
-      (x:xs) -> print (readProblem x)
+smtStdin :: IO ()
+smtStdin = do
+    inp <- B.getContents
+    print (readProblem inp)
