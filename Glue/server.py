@@ -1,4 +1,4 @@
-import json, requests
+import json, requests, os.path
 
 _USER_ID = '0357TH6LX4rVbuVBCIBqeCcHznBDyL8ce5uduB69'
 _URL = 'http://icfpc2013.cloudapp.net/%s?auth=%svpsH1H'
@@ -28,15 +28,19 @@ class Server(object):
 
     _problems = None
 
-    def __init__(self):
-        with open(_PROBLEMS_FILE) as file:
-            self._problems = json.load(file)
-
     def get_problems(self):
         response = self._request('myproblems')
+        with open(_PROBLEMS_FILE, 'w') as file:
+            json.dump(response, file)
         return response
 
     def get_problems_cached(self):
+        if not self._problems:
+            try:
+                with open(_PROBLEMS_FILE, 'r') as file:
+                    self._problems = json.load(file)
+            except IOError:
+                return self.get_problems()
         return self._problems
 
     def evaluate(self, problem = None, program = None, arguments = [], training = True):
