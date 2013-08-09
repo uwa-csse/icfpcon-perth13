@@ -51,4 +51,12 @@ evalExpr v@(Vars x _ _) (Fold e0 e1 lam) = foldr f x0 xs
 ------------------------------------------------------------------------
 
 unpack64 :: Word64 -> [Word8]
-unpack64 x = map (fromIntegral . (shiftR x)) [56,48..0]
+unpack64 x = [ fromIntegral (shiftR x 56)
+             , fromIntegral (shiftR x 48)
+             , fromIntegral (shiftR x 40)
+             , fromIntegral (shiftR x 32)
+             , fromIntegral (shiftR x 24)
+             , fromIntegral (shiftR x 16)
+             , fromIntegral (shiftR x  8)
+             , fromIntegral x
+             ]
