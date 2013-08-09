@@ -8,10 +8,12 @@ module Data.BV.Parser (
 
 import           Control.Applicative ((<$>), (<*>), (<*), (<|>), pure)
 import           Data.AttoLisp (Lisp(..), Result(..), FromLisp, ToLisp)
-import           Data.AttoLisp (lisp, fromLisp, parseLisp, struct, typeMismatch)
 import           Data.AttoLisp (encode, toLisp, mkStruct)
+import           Data.AttoLisp (lisp, fromLisp, parseLisp, struct, typeMismatch)
 import qualified Data.Attoparsec.ByteString.Lazy as A
 import qualified Data.ByteString.Lazy.Char8 as B
+import           Data.List (nub)
+import qualified Data.Text as T
 
 import           Data.BV.Types
 
@@ -21,12 +23,25 @@ import           Data.BV.Types
 parseProg :: B.ByteString -> Either String Prog
 parseProg bs = case el of
     Left err -> Left err
-    Right l  -> case fromLisp l of
-      Error err -> Left err
+    Right l  -> case fromLisp (fixIdents l) of
+      Error err -> Left $ err ++ (show (fixIdents l))
       Success p -> Right p
   where
     el :: Either String Lisp
     el = A.parseOnly (lisp <* A.endOfInput) (B.toStrict bs)
+
+fixIdents :: Lisp -> Lisp
+fixIdents l = replace (nub $ idents l) l
+  where
+    replace (x:_)     (Symbol s) | s == x = Symbol "x"
+    replace (_:y:_)   (Symbol s) | s == y = Symbol "y"
+    replace (_:_:z:_) (Symbol s) | s == z = Symbol "z"
+    replace vs        (List xs)           = List $ map (replace vs) xs
+    replace _         x                   = x
+
+    idents (Symbol x) | "x_" `T.isPrefixOf` x = [x]
+    idents (List xs)                          = concatMap idents xs
+    idents _                                  = []
 
 instance FromLisp Prog where
     parseLisp = struct "lambda" prog
