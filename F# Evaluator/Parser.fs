@@ -60,12 +60,44 @@ let rec lexify stream =
         | h :: t -> failwith (sprintf "Unrecognized symbol: %A" h)
     Expr(helper RevList.Empty stream)
 
+let BinIds = Set.ofList ["or"; "xor"; "and"; "plus";]
+let UnIds = Set.ofList ["or"; "xor"; "and"; "plus";]
 
-let parse stream = 
-    let rec parseExpr = function
-        | Id("If0") :: Expr(cond) :: Expr(tExp) :: Expr(fExpr) :: [] ->
-            If0(parseExpr cond, parseExpr tExp, parseExpr fExpr)
+let (|UnOp|_|) unop = 
+    match unop with
+    | "not" -> Some Not
+    | "shl1" -> Some Shl1
+    | "shr1" -> Some Shr1
+    | "shr4" -> Some Shr4
+    | "shr16" -> Some Shr16
+    | _ -> None
+let (|BinOp|_|) binop = 
+    match binop with
+    | "or" -> Some Or
+    | "xor" -> Some Xor
+    | "and" -> Some And
+    | "plus" -> Some Plus
+    | _ -> None
+
+let parseProgram stream = 
+    let rec parseTok = function
+        | Zero -> Atom(Type.Zero)
+        | One -> Atom(Type.One)
+        | Id("x") -> Atom(Type.Id(Type.X))
+        | Id("y") -> Atom(Type.Id(Type.Y))
+        | Id("z") -> Atom(Type.Id(Type.Z))
+        | Expr(Id("If0") :: cond :: tExp :: fExpr :: []) ->
+            If0(parseTok cond, parseTok tExp, parseTok fExpr)
+        | Expr(Id("fold") :: a :: b :: Expr(Id("lambda") :: Expr(_) :: body :: []) :: []) ->
+            Fold((parseTok a, parseTok b), parseTok body)
+        | Expr(Id(BinOp(op)) :: a :: b :: []) ->
+            Binary(op, parseTok a, parseTok b)
+        | Expr(Id(UnOp(op)) :: a :: []) ->
+            Unary(op, parseTok a)
+        | Expr(a :: []) -> parseTok a
         | _ -> failwith "Invalid expr"
     match lexify (List.ofSeq stream) with
-    | Expr(Expr(Id("lambda") :: Expr(Id("x") :: Expr(body) :: []) :: t) :: []) -> parseExpr body
-    | _ -> failwith "Invalid starting lambda"
+    | Expr(Expr(Id("lambda") :: Expr(Id("x") :: []) :: body :: []) :: []) -> parseTok body
+    | a -> 
+        printfn "%A" a
+        failwith "Invalid starting lambda"
