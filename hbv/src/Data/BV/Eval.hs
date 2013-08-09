@@ -1,6 +1,7 @@
 module Data.BV.Eval (
       Vars(..)
     , evalProg
+    , evalExpr
     ) where
 
 import Data.Bits

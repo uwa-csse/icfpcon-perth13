@@ -6,6 +6,7 @@ module Data.BV.Parser (
     , showProg
     , encodeProg
     , readProblem
+    , readComments
     ) where
 
 import           Control.Applicative ((<$>), (<*>), (<*), (<|>), pure)
@@ -128,6 +129,12 @@ readProblem bs = case filterComments (B.lines bs) of
 
 filterComments :: [B.ByteString] -> [B.ByteString]
 filterComments = filter (not . ("#" `B.isPrefixOf`))
+
+readComments :: B.ByteString -> B.ByteString
+readComments = B.unlines . map clean . filter isComment . B.lines
+  where
+    clean = B.dropWhile (== ' ') . B.drop 1
+    isComment = ("#" `B.isPrefixOf`)
 
 ------------------------------------------------------------------------
 -- Pretty Printing

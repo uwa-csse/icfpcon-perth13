@@ -71,10 +71,18 @@ evalStdin = do
 
 bfStdin :: IO ()
 bfStdin = do
-    p <- readProblem <$> B.getContents
-    print p
+    bs <- B.getContents
+    let p = readProblem bs
+        c = readComments bs
+    putStrLn $ concat $ [
+        "Size = ", show (pSize p)
+      , ", Ops = ", show (pOps p)
+      , ", IO = ", show (length (pIO p)), " pairs"
+      ]
     putStrLn "======="
     mapM_ (putStrLn . showProg) (BF.allProgs p)
+    putStrLn "======="
+    B.putStr c
 
 ------------------------------------------------------------------------
 

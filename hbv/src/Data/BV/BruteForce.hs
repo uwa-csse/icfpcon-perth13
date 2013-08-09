@@ -1,10 +1,12 @@
 module Data.BV.BruteForce (solve, allProgs) where
 
-import Data.List (sort, nub)
+import Data.List (sort, nub, nubBy)
 import Data.Maybe (catMaybes)
 
 import Data.BV.Eval
 import Data.BV.Types
+
+import Debug.Trace
 
 ------------------------------------------------------------------------
 
@@ -26,8 +28,11 @@ allProgs (Problem sz ops ios) =
 -- O(scary)
 allExprs :: Size -> [Op] -> [Id] -> [Expr]
 allExprs sz ops ids | sz <= 0   = []
-                    | otherwise = filter ok (s1 ++ s2 ++ s3 ++ s4 ++ s5)
+                    | otherwise = es'
   where
+    es  = filter ok $ s1 ++ s2 ++ s3 ++ s4 ++ s5
+    es' = nubBy exprEquiv es
+
     ok e = let sz' = exprSize e
                fs  = countFolds e
            in sz >= sz' && (fs == 0 || fs == 1)
@@ -40,6 +45,18 @@ allExprs sz ops ids | sz <= 0   = []
 
     exprs n = allExprs (sz-n) ops ids
     fxprs n = allExprs (sz-n) ops (ids ++ [Y,Z])
+
+exprEquiv :: Expr -> Expr -> Bool
+exprEquiv e0 e1 | eq        = True
+                | otherwise = False
+  where
+    eval = evalExpr (Vars 0 0 0)
+
+    eq = exprSize e0 == exprSize e1
+      && noVars e0
+      && noVars e1
+      && eval e0 == eval e1
+      && findOps e0 `opsEq` findOps e1
 
 mop1 :: Op -> Expr -> Maybe Expr
 mop1 (O1 o) e = Just (Op1 o e)
@@ -65,6 +82,15 @@ countFolds (Op1 _ e0)      = countFolds e0
 countFolds (Op2 _ e0 e1)   = countFolds e0 + countFolds e1
 countFolds (If0 e0 e1 e2)  = countFolds e0 + countFolds e1 + countFolds e2
 countFolds (Fold e0 e1 e2) = 1 + countFolds e0 + countFolds e1 + countFolds e2
+
+noVars :: Expr -> Bool
+noVars Zero            = True
+noVars One             = True
+noVars (Id _)          = False
+noVars (Op1 _ e0)      = noVars e0
+noVars (Op2 _ e0 e1)   = noVars e0 && noVars e1
+noVars (If0 e0 e1 e2)  = noVars e0 && noVars e1 && noVars e2
+noVars (Fold e0 e1 e2) = noVars e0 && noVars e1 && noVars e2
 
 findOps :: Expr -> [Op]
 findOps Zero            = []
