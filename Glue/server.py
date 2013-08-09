@@ -1,56 +1,70 @@
 import json, requests
 
+_USER_ID = '0357TH6LX4rVbuVBCIBqeCcHznBDyL8ce5uduB69'
+_URL = 'http://icfpc2013.cloudapp.net/%s?auth=%svpsH1H'
+_PROBLEMS_FILE = 'problems.json'
+
 def _enum(**enums):
     return type('Enum', (), enums)
 
 Operators = _enum(NO_FOLDS=0, TFOLD=1, FOLD=2)
 
-class GameServerException(Exception):
+class ServerException(Exception):
     pass
 
-class RequestInvalidException(GameServerException):
+class RequestInvalidException(ServerException):
     pass
 
-class ProblemNotFoundException(GameServerException):
+class ProblemNotFoundException(ServerException):
     pass
 
-class AuthorisationRequiredException(GameServerException):
+class AuthorisationRequiredException(ServerException):
     pass
 
-class TryAgainLaterException(GameServerException):
+class TryAgainLaterException(ServerException):
     pass
 
-class GameServer(object):
-    _USER_ID = '0357TH6LX4rVbuVBCIBqeCcHznBDyL8ce5uduB69'
-    _URL = 'http://icfpc2013.cloudapp.net/%s?auth=%svpsH1H'
+class Server(object):
+
+    _problems = None
+
+    def __init__(self):
+        with open(_PROBLEMS_FILE) as file:
+            self._problems = json.load(file)
 
     def get_problems(self):
         response = self._request('myproblems')
         return response
 
-    def evaluate(self, problem = None, program = None, arguments = []):
+    def get_problems_cached(self):
+        return self._problems
+
+    def evaluate(self, problem = None, program = None, arguments = [], training = True):
+        if problem and training and any(map(lambda x: x['id'] == problem, self.get_problems_cached())):
+            raise ServerException('Passed real problem ID while in training mode')
         arguments = map(lambda x: '%#018x' % x, arguments)
         if problem:
             request_body = {'id': problem, 'arguments': arguments}
         elif program:
             request_body = {'program': program, 'arguments': arguments}
         else:
-            raise GameServerException('Request must contain either a problem ID or a program')
-        print request_body
+            raise ServerException('Request must contain either a problem ID or a program')
         response = self._request('eval', request_body)
         if response['status'] == 'ok':
             outputs = map(lambda x: int(x, 16), response['outputs'])
             return outputs
         else:
-            raise GameServerException(response['message'])
+            raise ServerException(response['message'])
 
-    def guess(self, problem, program):
+    def guess(self, problem, program, training = True):
+        if training and any(map(lambda x: x['id'] == problem, self.get_problems_cached())):
+            raise ServerException('Passed real problem ID while in training mode')
         request_body = {'id': problem, 'program': program}
         response = self._request('guess', request_body)
         if response['status'] == 'win' or response['status'] == 'mismatch':
             return response
         else:
-            raise GameServerException(response['message'])
+            raise ServerException(response['message'])
 
     def get_training_problem(self, size = None, operators = None):
         if operators == Operators.NO_FOLDS:
