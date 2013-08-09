@@ -45,6 +45,7 @@ evalStdin = do
         Left err -> putStrLn ("hbv: " ++ err)
         Right p  -> do
           putStrLn ("parsed: " ++ show p)
+          putStrLn ("size: " ++ show (size p))
           mapM_ putStrLn $ map (go p . readWord64 . B.unpack) xs
   where
     go :: Prog -> Word64 -> String
