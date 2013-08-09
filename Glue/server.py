@@ -81,7 +81,11 @@ class Server(object):
         else:
             operators = None
 
-        if not (type(size) is int and 3 <= size <= 30):
+        try:
+            size = int(size)
+            if not 3 <= size <= 30:
+                size = None
+        except TypeError:
             size = None
 
         if size != None and operators != None:
