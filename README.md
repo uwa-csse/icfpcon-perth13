@@ -16,7 +16,7 @@ We have a python script that translates between the API and our solvers.
 A running instance of a solver works on one problem. The problem description is passed as command
 line arguments:
 
-    solver size op [op ...]
+    solver <size> <op> [<op> ...]
 
 where `size` is the size of the program and `op` is an op that is present in the program.
 
@@ -45,8 +45,8 @@ where `input-list` and `output-list` are a space seperated list of 64-bit vector
 **Response**
 
     win|lose
-    <input> <ouput>
+    [<input> <ouput>]
 
 where `program` is the program as a string, `input` is a counterexample and `output` is the correct
-matching output.
+matching output. If the guess was correct, `input` and `output` will not be present
 
