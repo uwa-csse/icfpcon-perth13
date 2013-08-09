@@ -4,6 +4,7 @@
 module Data.BV.Parser (
       parseProg
     , encodeProg
+    , readProblem
     ) where
 
 import           Control.Applicative ((<$>), (<*>), (<*), (<|>), pure)
@@ -86,6 +87,28 @@ instance FromLisp Op2 where
     parseLisp (Symbol "xor")  = pure Xor
     parseLisp (Symbol "plus") = pure Plus
     parseLisp e = typeMismatch "Op2" e
+
+------------------------------------------------------------------------
+-- Parsing Problem/Ops
+
+readOp :: B.ByteString -> Op
+readOp "not"   = O1 Not
+readOp "shl1"  = O1 Shl1
+readOp "shr1"  = O1 Shr1
+readOp "shr4"  = O1 Shr4
+readOp "shr16" = O1 Shr16
+readOp "and"   = O2 And
+readOp "or"    = O2 Or
+readOp "xor"   = O2 Xor
+readOp "plus"  = O2 Plus
+readOp "if0"   = OIf0
+readOp "tfold" = OTFold
+readOp "fold"  = OFold
+
+readProblem :: B.ByteString -> Problem
+readProblem bs = case B.words bs of
+  (x:xs) -> Problem (read (B.unpack x)) (map readOp xs)
+  _      -> Problem 0 []
 
 ------------------------------------------------------------------------
 -- Pretty Printing

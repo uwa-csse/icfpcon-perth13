@@ -6,6 +6,9 @@ module Data.BV.Types (
     , Id(..)
     , Op1(..)
     , Op2(..)
+    , Problem(..)
+    , Size
+    , Op(..)
     , size
     ) where
 
@@ -34,9 +37,19 @@ data Op2 = And | Or | Xor | Plus
   deriving (Eq, Show)
 
 ------------------------------------------------------------------------
+
+data Problem = Problem Size [Op]
+  deriving (Eq, Show)
+
+type Size = Int
+
+data Op = O1 Op1 | O2 Op2 | OIf0 | OTFold | OFold
+  deriving (Eq, Show)
+
+------------------------------------------------------------------------
 -- Functions
 
-size :: Prog -> Int
+size :: Prog -> Size
 size (Prog e) = 1 + go e
   where
     go Zero            = 1

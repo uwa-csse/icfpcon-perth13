@@ -19,19 +19,25 @@ import           Data.BV.Test (checkProps)
 main :: IO ()
 main = do
     args <- cmdArgs hbvArgs
-    when (qc args) checkProps
-    when (eval args) evalStdin
+    case hbvMode args of
+      Eval  -> evalStdin
+      Solve -> solveStdin
+      QC    -> checkProps
 
 ------------------------------------------------------------------------
 
 data HbvArgs = HbvArgs {
-    qc   :: Bool
-  , eval :: Bool
+    hbvMode  :: HbvMode
   } deriving (Show, Data, Typeable)
 
+data HbvMode = Eval | Solve | QC
+  deriving (Show, Data, Typeable)
+
 hbvArgs = HbvArgs {
-    qc   = False &= help "QuickCheck self test"
-  , eval = False &= help "Evaluate program from stdin"
+    hbvMode = enum [ Eval  &= help "Evaluate program from stdin (default)"
+                   , Solve &= help "Solve problem from stdin"
+                   , QC    &= help "QuickCheck self test"
+                   ]
   } &= summary "HBV v0.1"
 
 ------------------------------------------------------------------------
@@ -56,3 +62,12 @@ evalStdin = do
 
     readWord64 :: String -> Word64
     readWord64 = read
+
+------------------------------------------------------------------------
+
+solveStdin :: IO ()
+solveStdin = do
+    inp <- B.lines <$> B.getContents
+    case inp of
+      []     -> putStrLn "hbv: no input"
+      (x:xs) -> print (readProblem x)
