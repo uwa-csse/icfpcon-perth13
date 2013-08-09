@@ -114,7 +114,7 @@ readOp "fold"  = OFold
 readOp op      = error $ "readOp: unknown operator: " ++ B.unpack op
 
 readProblem :: B.ByteString -> Problem
-readProblem bs = case B.lines bs of
+readProblem bs = case filterComments (B.lines bs) of
     []     -> error "readProblem: no input"
     (x:xs) -> prob x (map io xs)
   where
@@ -125,6 +125,9 @@ readProblem bs = case B.lines bs of
     io line = case B.words line of
         (i:o:_) -> (read $ B.unpack i, read $ B.unpack o)
         _       -> error $ "readProblem: could not read input/output pair: " ++ B.unpack line
+
+filterComments :: [B.ByteString] -> [B.ByteString]
+filterComments = filter (not . ("#" `B.isPrefixOf`))
 
 ------------------------------------------------------------------------
 -- Pretty Printing

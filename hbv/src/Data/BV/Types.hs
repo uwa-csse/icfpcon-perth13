@@ -34,10 +34,10 @@ data Id = X | Y | Z
   deriving (Eq, Show)
 
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data Op2 = And | Or | Xor | Plus
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 ------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ data Problem = Problem {
 type Size = Int
 
 data Op = O1 Op1 | O2 Op2 | OIf0 | OTFold | OFold
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 ------------------------------------------------------------------------
 -- Functions
