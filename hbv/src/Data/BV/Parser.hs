@@ -3,6 +3,7 @@
 
 module Data.BV.Parser (
       parseProg
+    , showProg
     , encodeProg
     , readProblem
     ) where
@@ -127,6 +128,9 @@ readProblem bs = case B.lines bs of
 
 ------------------------------------------------------------------------
 -- Pretty Printing
+
+showProg :: Prog -> String
+showProg = B.unpack . encodeProg
 
 encodeProg :: Prog -> B.ByteString
 encodeProg = encode

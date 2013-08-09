@@ -9,7 +9,8 @@ module Data.BV.Types (
     , Problem(..)
     , Size
     , Op(..)
-    , size
+    , progSize
+    , exprSize
     ) where
 
 import Data.Word (Word64)
@@ -54,13 +55,14 @@ data Op = O1 Op1 | O2 Op2 | OIf0 | OTFold | OFold
 ------------------------------------------------------------------------
 -- Functions
 
-size :: Prog -> Size
-size (Prog e) = 1 + go e
-  where
-    go Zero            = 1
-    go One             = 1
-    go (Id _)          = 1
-    go (If0 e0 e1 e2)  = 1 + go e0 + go e1 + go e2
-    go (Fold e0 e1 e2) = 2 + go e0 + go e1 + go e2
-    go (Op1 _ e0)      = 1 + go e0
-    go (Op2 _ e0 e1)   = 1 + go e0 + go e1
+progSize :: Prog -> Size
+progSize (Prog e) = 1 + exprSize e
+
+exprSize :: Expr -> Size
+exprSize Zero            = 1
+exprSize One             = 1
+exprSize (Id _)          = 1
+exprSize (If0 e0 e1 e2)  = 1 + exprSize e0 + exprSize e1 + exprSize e2
+exprSize (Fold e0 e1 e2) = 2 + exprSize e0 + exprSize e1 + exprSize e2
+exprSize (Op1 _ e0)      = 1 + exprSize e0
+exprSize (Op2 _ e0 e1)   = 1 + exprSize e0 + exprSize e1

@@ -13,6 +13,7 @@ import           System.Console.CmdArgs
 
 import           Data.BV
 import qualified Data.BV.SMT as SMT
+import qualified Data.BV.BruteForce as BF
 import           Data.BV.Test (checkProps)
 
 ------------------------------------------------------------------------
@@ -21,9 +22,10 @@ main :: IO ()
 main = do
     args <- cmdArgs hbvArgs
     case hbvMode args of
-      Eval -> evalStdin
-      SMT  -> smtStdin
-      QC   -> checkProps
+      Eval       -> evalStdin
+      SMT        -> smtStdin
+      BruteForce -> bfStdin
+      QC         -> checkProps
 
 ------------------------------------------------------------------------
 
@@ -31,13 +33,14 @@ data HbvArgs = HbvArgs {
     hbvMode  :: HbvMode
   } deriving (Show, Data, Typeable)
 
-data HbvMode = Eval | SMT | QC
+data HbvMode = Eval | SMT | BruteForce | QC
   deriving (Show, Data, Typeable)
 
 hbvArgs = HbvArgs {
-    hbvMode = enum [ Eval &= help "Evaluate program from stdin (default)"
-                   , SMT  &= help "Solve problem from stdin using SMT solver"
-                   , QC   &= help "QuickCheck self test"
+    hbvMode = enum [ Eval       &= help "Evaluate program from stdin (default)"
+                   , SMT        &= help "Solve problem from stdin using SMT solver"
+                   , BruteForce &= help "Solve problem from stdin using brute-force solver"
+                   , QC         &= help "QuickCheck self test"
                    ]
   } &= summary "HBV v0.1"
 
@@ -52,7 +55,7 @@ evalStdin = do
         Left err -> putStrLn ("hbv: " ++ err)
         Right p  -> do
           putStrLn ("parsed: " ++ show p)
-          putStrLn ("size: " ++ show (size p))
+          putStrLn ("size: " ++ show (progSize p))
           mapM_ putStrLn $ map (go p . readWord64 . B.unpack) xs
   where
     go :: Prog -> Word64 -> String
@@ -63,6 +66,15 @@ evalStdin = do
 
     readWord64 :: String -> Word64
     readWord64 = read
+
+------------------------------------------------------------------------
+
+bfStdin :: IO ()
+bfStdin = do
+    p <- readProblem <$> B.getContents
+    print p
+    putStrLn "======="
+    mapM_ (putStrLn . showProg) (BF.allProgs p)
 
 ------------------------------------------------------------------------
 
