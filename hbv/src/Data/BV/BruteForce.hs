@@ -13,7 +13,7 @@ solve = undefined
 
 allProgs :: Problem -> [Prog]
 allProgs (Problem sz ops ios) =
-    filter checkEval . filter checkOps . filter checkSize $ ps
+    nub . filter checkEval . filter checkOps . filter checkSize $ ps
   where
     ps = map Prog (allExprs (sz-1) ops [X])
 
@@ -33,13 +33,13 @@ allExprs sz ops ids | sz <= 0   = []
            in sz >= sz' && (fs == 0 || fs == 1)
 
     s1 = [Zero, One] ++ map Id ids
-    s2 = catMaybes [mop1  o e     | e <-  exprs 1, o <- ops]
-    s3 = catMaybes [mop2  o l r   | l <-  exprs 2, r <-  exprs 2, o <- ops]
-    s4 = catMaybes [mif   o p t f | p <-  exprs 3, t <-  exprs 3, f <-  exprs 3, o <- ops]
-    s5 = catMaybes [mfold o a b c | a <- fexprs 4, b <- fexprs 4, c <- fexprs 4, o <- ops]
+    s2 = catMaybes [mop1  o e     | e <- exprs 1, o <- ops]
+    s3 = catMaybes [mop2  o l r   | l <- exprs 2, r <- exprs 2, l <= r, o <- ops]
+    s4 = catMaybes [mif   o p t f | p <- exprs 3, t <- exprs 3, f <- exprs 3, o <- ops]
+    s5 = catMaybes [mfold o a b c | a <- fxprs 4, b <- fxprs 4, c <- fxprs 4, o <- ops]
 
-    exprs n  = allExprs (sz-n) ops ids
-    fexprs n = allExprs (sz-n) ops (ids ++ [Y,Z])
+    exprs n = allExprs (sz-n) ops ids
+    fxprs n = allExprs (sz-n) ops (ids ++ [Y,Z])
 
 mop1 :: Op -> Expr -> Maybe Expr
 mop1 (O1 o) e = Just (Op1 o e)
