@@ -26,7 +26,7 @@ type Token =
     | Expr of Token list
 
 let (|Digit|_|) d = if d >= '0' && d <= '9' then Some(int d - int '0') else None
-let (|Ident|_|) i = if i >= 'a' && i <= 'z' then Some(i) else None
+let (|Ident|_|) i = if (i >= 'a' && i <= 'z') || i = '_' || System.Char.IsDigit(i) then Some(i) else None
 let (|WhiteSpace|_|) c = if System.Char.IsWhiteSpace c then Some(c) else None
 
 let rec lexify stream = 
@@ -52,7 +52,7 @@ let rec lexify stream =
             let (tok, next) = parseExpr t
             helper (RevList.Cons(toks, tok)) next
         | '0' :: t -> helper (RevList.Cons(toks, Zero)) t
-        | '1' :: t -> helper (RevList.Cons(toks, Zero)) t
+        | '1' :: t -> helper (RevList.Cons(toks, One)) t
         | Ident(i) :: t -> 
             let (tok, next) = parseIdent t i
             helper (RevList.Cons(toks, tok)) next
@@ -80,24 +80,24 @@ let (|BinOp|_|) binop =
     | _ -> None
 
 let parseProgram stream = 
-    let rec parseTok = function
+    let rec parseTok vars = function
         | Zero -> Atom(Type.Zero)
         | One -> Atom(Type.One)
-        | Id("x") -> Atom(Type.Id(Type.X))
-        | Id("y") -> Atom(Type.Id(Type.Y))
-        | Id("z") -> Atom(Type.Id(Type.Z))
+        | Id(i) when Map.containsKey i vars -> Atom(Type.Id(Map.find i vars))
         | Expr(Id("If0") :: cond :: tExp :: fExpr :: []) ->
-            If0(parseTok cond, parseTok tExp, parseTok fExpr)
-        | Expr(Id("fold") :: a :: b :: Expr(Id("lambda") :: Expr(_) :: body :: []) :: []) ->
-            Fold((parseTok a, parseTok b), parseTok body)
+            If0(parseTok vars cond, parseTok vars tExp, parseTok vars fExpr)
+        | Expr(Id("fold") :: a :: b :: Expr(Id("lambda") :: Expr(Id(arg1) :: Id(arg2) :: []) :: body :: []) :: []) ->
+            let parsedA = parseTok vars a
+            let parsedB = parseTok vars b
+            Fold((parsedA, parsedB), parseTok ( vars.Add (arg1, Type.Y) |> Map.add arg2 Type.Z ) body)
         | Expr(Id(BinOp(op)) :: a :: b :: []) ->
-            Binary(op, parseTok a, parseTok b)
+            Binary(op, parseTok vars a, parseTok vars b)
         | Expr(Id(UnOp(op)) :: a :: []) ->
-            Unary(op, parseTok a)
-        | Expr(a :: []) -> parseTok a
-        | _ -> failwith "Invalid expr"
+            Unary(op, parseTok vars a)
+        | Expr(a :: []) -> parseTok vars a
+        | a -> printfn "%A" a; failwith "Invalid expr"
     match lexify (List.ofSeq stream) with
-    | Expr(Expr(Id("lambda") :: Expr(Id("x") :: []) :: body :: []) :: []) -> parseTok body
+    | Expr(Expr(Id("lambda") :: Expr(Id(x) :: []) :: body :: []) :: []) -> parseTok (Map.ofList [(x, Type.X)]) body
     | a -> 
         printfn "%A" a
         failwith "Invalid starting lambda"
