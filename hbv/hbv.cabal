@@ -17,6 +17,7 @@ executable hbv
     , attoparsec == 0.10.*
     , bytestring == 0.10.*
     , cmdargs    == 0.10.*
+    , sbv        == 2.10.*
     , text       == 0.11.*
 
   ghc-options: -O2 -Wall -funfolding-use-threshold=16

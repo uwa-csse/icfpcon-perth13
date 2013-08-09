@@ -10,10 +10,11 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Word (Word64)
 import           Numeric (showHex)
 import           System.Console.CmdArgs
+import           System.IO (stderr, hPutStrLn)
 
 import           Data.BV
-import qualified Data.BV.SMT as SMT
 import qualified Data.BV.BruteForce as BF
+import qualified Data.BV.SMT as SMT
 import           Data.BV.Test (checkProps)
 
 ------------------------------------------------------------------------
@@ -74,15 +75,15 @@ bfStdin = do
     bs <- B.getContents
     let p = readProblem bs
         c = readComments bs
-    putStrLn $ concat $ [
+    hPutStrLn stderr $ concat $ [
         "Size = ", show (pSize p)
       , ", Ops = ", show (pOps p)
       , ", IO = ", show (length (pIO p)), " pairs"
       ]
-    putStrLn "======="
+    hPutStrLn stderr "======="
     mapM_ (putStrLn . showProg) (BF.allProgs p)
-    putStrLn "======="
-    B.putStr c
+    hPutStrLn stderr "======="
+    B.hPutStr stderr c
 
 ------------------------------------------------------------------------
 

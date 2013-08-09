@@ -1,12 +1,11 @@
 module Data.BV.BruteForce (solve, allProgs) where
 
-import Data.List (sort, nub, nubBy)
-import Data.Maybe (catMaybes)
+import           Data.List (sort, nub, nubBy)
+import           Data.Maybe (catMaybes)
 
-import Data.BV.Eval
-import Data.BV.Types
-
-import Debug.Trace
+import qualified Data.BV.Eval as E
+import           Data.BV.SMTEval (progEquiv)
+import           Data.BV.Types
 
 ------------------------------------------------------------------------
 
@@ -15,11 +14,11 @@ solve = undefined
 
 allProgs :: Problem -> [Prog]
 allProgs (Problem sz ops ios) =
-    nub . filter checkEval . filter checkOps . filter checkSize $ ps
+    nubBy progEquiv . filter checkEval . filter checkOps . filter checkSize $ ps
   where
     ps = map Prog (allExprs (sz-1) ops [X])
 
-    checkEval p = all (\(i,o) -> evalProg p i == o) ios
+    checkEval p = all (\(i,o) -> E.evalProg p i == o) ios
 
     checkSize p = progSize p == sz
 
@@ -50,7 +49,7 @@ exprEquiv :: Expr -> Expr -> Bool
 exprEquiv e0 e1 | eq        = True
                 | otherwise = False
   where
-    eval = evalExpr (Vars 0 0 0)
+    eval = E.evalExpr (E.Vars 0 0 0)
 
     eq = exprSize e0 == exprSize e1
       && noVars e0
