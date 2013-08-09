@@ -1,11 +1,20 @@
 ﻿
-[<EntryPoint>]
-let main argv = 
-    printfn "%A" argv
+let eval () =
+    // eval mode
+    let program = System.Console.ReadLine() |> Parser.parseProgram
     while true do
         try
             let input = System.Console.ReadLine() |> System.UInt64.Parse
-            printfn "%d" (Parser.parseProgram (System.Console.ReadLine()) |> Solver.eval input |> int ) 
+            printfn "%d" (program |> Solver.eval input)
         with
         | e -> printfn "%s" (e.ToString())
-    0 // return an integer exit code
+    0
+
+[<EntryPoint>]
+let main argv = 
+    //printfn "%A" argv
+    match argv.[0] with
+        | "--eval" -> eval ()
+        | "--solve" -> 1 // sooon
+        | _ -> 127
+
