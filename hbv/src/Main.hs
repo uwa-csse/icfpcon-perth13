@@ -1,27 +1,28 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# OPTIONS_GHC -w #-}
 
 module Main (main) where
 
-import qualified Data.ByteString.Lazy.Char8 as B
+import           Control.Monad (when)
+import           Data.Data (Data)
+import           Data.Typeable (Typeable)
+import           System.Console.CmdArgs
 import           Test.QuickCheck
 
-import           Data.BV
+import           Data.BV.Test (checkProps)
 
 ------------------------------------------------------------------------
 
 main :: IO ()
 main = do
-    quickCheck prop_encode_decode
+    args <- cmdArgs hbvArgs
+    when (qc args) checkProps
 
-prop_encode_decode p = case ep' of
-    Left err -> error ("parse-failed: " ++ err ++ "\n" ++ B.unpack bs)
-    Right p' -> p == p'
-  where
-    bs  = encodeProg p
-    ep' = parseProg bs
+data HbvArgs = HbvArgs {
+    qc :: Bool
+  } deriving (Show, Data, Typeable)
 
+hbvArgs = HbvArgs {
+    qc = False &= help "QuickCheck"
+  } &= summary "HBV v0.1"
