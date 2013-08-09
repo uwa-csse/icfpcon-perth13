@@ -30,7 +30,10 @@ inout_file.write("# %s\n" % prob['challenge'])
 inout_file.write("%d %s\n" % (prob['size'], opstr2))
 
 in_sent = 0
-inputs = [0, 1, 0xffffffff]   ## Some probably useful values
+                ## Some probably useful values
+inputs = [0, 1, 0xffffffffffffffff, 0x00000000ffffffff, 0xffffffff00000000, 0x5555555555555555, 0xaaaaaaaaaaaaaaaa, 
+                0x3333333333333333, 0xcccccccccccccccc, 0x0f0f0f0f0f0f0f0f, 0xf0f0f0f0f0f0f0f0, 
+                0x00ff00ff00ff00ff, 0xff00ff00ff00ff00, 0x0000ffff0000ffff, 0xffff0000ffff0000]
 
 outputs = []
 
