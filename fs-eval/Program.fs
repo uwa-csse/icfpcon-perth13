@@ -12,6 +12,8 @@ let eval () =
 
 [<EntryPoint>]
 let main argv = 
+    printfn "%A" (Parser.parseProgram "(lambda (x) (if0 (shl1 x) 0 1))")
+    System.Console.ReadLine()
     //printfn "%A" argv
     match argv.[0] with
         | "--eval" -> eval ()

@@ -61,7 +61,7 @@ let rec lexify stream =
     Expr(helper RevList.Empty stream)
 
 let BinIds = Set.ofList ["or"; "xor"; "and"; "plus";]
-let UnIds = Set.ofList ["or"; "xor"; "and"; "plus";]
+let UnIds = Set.ofList ["or"; "xor"; "and"; "plus";] 
 
 let (|UnOp|_|) unop = 
     match unop with
@@ -84,7 +84,7 @@ let parseProgram stream =
         | Zero -> Atom(Type.Zero)
         | One -> Atom(Type.One)
         | Id(i) when Map.containsKey i vars -> Atom(Type.Id(Map.find i vars))
-        | Expr(Id("If0") :: cond :: tExp :: fExpr :: []) ->
+        | Expr(Id("i f0") :: cond :: tExp :: fExpr :: []) ->
             If0(parseTok vars cond, parseTok vars tExp, parseTok vars fExpr)
         | Expr(Id("fold") :: a :: b :: Expr(Id("lambda") :: Expr(Id(arg1) :: Id(arg2) :: []) :: body :: []) :: []) ->
             let parsedA = parseTok vars a
