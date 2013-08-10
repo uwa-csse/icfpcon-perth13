@@ -5,18 +5,22 @@ import subprocess
 
 from server import Server
 
-#if (len(sys.argv) != 2):
-#	print "usage: %s <size>", sys.argv[0]
-#	exit (1)
+##################
+training = True ##   ## Don't make it live unless you mean it!!  Let's keep a perfect safety record! 
+##################
 
-#sz = sys.argv[1]
+if (len(sys.argv) != 2):
+	print "usage: %s <size>", sys.argv[0]
+	exit (1)
 
 s = Server()
 
-#probs = [ s.get_training_problem(int(sz)) ]
-#probs = json.load(open("problems.json"))
-
-probs = s.get_problems()    ## LIVE!!
+if training:
+    sz = sys.argv[1]
+    probs = [ s.get_training_problem(int(sz)) ]
+#else:
+#    probs = json.load(open("problems.json"))
+#    probs = s.get_problems()    ## LIVE!!
 
 
 # sort on size
@@ -24,20 +28,24 @@ probs = sorted(probs, lambda x,y: cmp(x["size"], y["size"]))
 
 #probs = [ p for p in probs if p['size'] <= 8 and ((not 'solved' in p) or not p['solved']) ]
 
-probs = [ p for p in probs if p['size'] > 8 and  p['size'] <= 11 and ((not 'solved' in p) or not p['solved']) and 'tfold' in p['operators'] ]
+#probs = [ p for p in probs if p['size'] > 8 and  p['size'] <= 11 and ((not 'solved' in p) or not p['solved']) and 'tfold' in p['operators'] ]
 
+if training:
+    logdir = "trains"
+else:
+    logdir = "actuals"
 
 for prob in probs:
 
     print prob["id"]
 
-    if not os.path.exists("actuals"):
-	    os.makedirs("actuals")
+    if not os.path.exists(logdir):
+	    os.makedirs(logdir)
 
     opstr1 = "_".join(prob['operators'])
     opstr2 = " ".join(prob['operators'])
 
-    inout_fname = "actuals/%02d-%s-%s.inout" % (prob['size'], opstr1, prob['id'])
+    inout_fname = logdir + "/%02d-%s-%s.inout" % (prob['size'], opstr1, prob['id'])
 
     inout_file = open(inout_fname, 'w')
 #    inout_file.write("# %s\n" % prob['challenge'])
@@ -55,10 +63,10 @@ for prob in probs:
     ############
 
 
-    while True:
+    while True:    ## Alternately "evaluate" 256 inputs & "guess" a program using hbv on accumulated in/out pairs 
 
 	while len(inputs) < in_sent + 256: inputs.append(random.getrandbits(64))
-	new_outs = s.evaluate(problem = prob['id'], arguments = inputs[in_sent : in_sent+256], training = False )
+	new_outs = s.evaluate(problem = prob['id'], arguments = inputs[in_sent : in_sent+256], training = training )
 
 	outputs = outputs + new_outs
 
@@ -85,7 +93,7 @@ for prob in probs:
 		print "hbv gave 0 lines!\n"
 		exit(1)
 
-	resp = s.guess(prob['id'], hbv_lines[0], False)
+	resp = s.guess(prob['id'], hbv_lines[0], training)
     #    resp = s.guess(prob['id'], "(lambda (x) (plus x (if0 (shr16 x) (shl1 0) 1)))", True)
 	if resp['status'] == 'win':
 		print "We won!"
@@ -100,8 +108,7 @@ for prob in probs:
 
 	if resp['status'] == 'error':
 		print (resp['message'])
-
-	# status 'error' => still continue and add more test cases - maybe check that there aren't too many errors?            
+ 	        # continue and add more test cases - maybe check that there aren't too many errors?            
 
     #myoutput.flush()
 
