@@ -30,8 +30,13 @@ solve (Problem sz ops ios) = traceShow satProg [Prog Zero]
       (cs :: [SCode]) <- mkExistVars n
       constrain $ bAll (`sElem` ps) cs
       constrain $ bAll (`sElem` cs) rs
-      constrain $ legal cs
+      constrain $ bAll (correct cs) sios
       return true
+
+    correct cs (i, o) = let (valid, o') = eval cs i
+                        in valid &&& o .== o'
+
+    sios = map (\(i,o) -> (literal i, literal o)) ios
 
     rs = required ops
     ps = possible ops
@@ -43,48 +48,51 @@ solve (Problem sz ops ios) = traceShow satProg [Prog Zero]
 ------------------------------------------------------------------------
 -- Constraints
 
-legal :: [SCode] -> SBool
-legal = flip go []
+eval :: [SCode] -> SWord64 -> (SBool, SWord64)
+eval prog x = go prog []
   where
-    go :: [SCode] -> [SWord64] -> SBool
+    valid r = (true, r)
+    invalid = (false, 0)
 
-    go [] []     = false -- invalid: stack has nothing on it
-    go [] (_:[]) = true  -- stack with single value to return
-    go [] _      = false -- invalid: stack has more than one value
+    go :: [SCode] -> [SWord64] -> (SBool, SWord64)
+
+    go [] []     = invalid -- invalid: stack has nothing on it
+    go [] (r:[]) = valid r -- stack with single value to return
+    go [] _      = invalid -- invalid: stack has more than one value
 
     go (c:cs) xs =
-      ite (c .== s'0) (go cs $ 0 : xs) $
-      ite (c .== s'1) (go cs $ 1 : xs) $
-      ite (c .== s'x) (go cs $ 2 : xs) $ -- don't care about the actual values,
-      ite (c .== s'y) (go cs $ 3 : xs) $ -- just checking the legality of a
-      ite (c .== s'z) (go cs $ 4 : xs) $ -- given set of instructions.
+      ite (c .== s'0) (go cs $ 0  : xs) $
+      ite (c .== s'1) (go cs $ 1  : xs) $
+      ite (c .== s'x) (go cs $ x  : xs) $
+      ite (c .== s'y) (go cs $ -1 : xs) $
+      ite (c .== s'z) (go cs $ -1 : xs) $
 
-      if null xs then false else
-      let x   = head xs
+      if null xs then invalid else
+      let u   = head xs
           xs' = tail xs in
 
-      ite (c .== s'not)   (go cs $ complement x : xs') $
-      ite (c .== s'shl1)  (go cs $ shiftL x 1   : xs') $
-      ite (c .== s'shr1)  (go cs $ shiftR x 1   : xs') $
-      ite (c .== s'shr4)  (go cs $ shiftR x 4   : xs') $
-      ite (c .== s'shr16) (go cs $ shiftR x 16  : xs') $
+      ite (c .== s'not)   (go cs $ complement u : xs') $
+      ite (c .== s'shl1)  (go cs $ shiftL u 1   : xs') $
+      ite (c .== s'shr1)  (go cs $ shiftR u 1   : xs') $
+      ite (c .== s'shr4)  (go cs $ shiftR u 4   : xs') $
+      ite (c .== s'shr16) (go cs $ shiftR u 16  : xs') $
 
-      if null xs' then false else
-      let y    = head xs'
+      if null xs' then invalid else
+      let v    = head xs'
           xs'' = tail xs' in
 
-      ite (c .== s'and)  (go cs $ (x  .&.  y) : xs'') $
-      ite (c .== s'or)   (go cs $ (x  .|.  y) : xs'') $
-      ite (c .== s'xor)  (go cs $ (x `xor` y) : xs'') $
-      ite (c .== s'plus) (go cs $ (x   +   y) : xs'') $
+      ite (c .== s'and)  (go cs $ (u  .&.  v) : xs'') $
+      ite (c .== s'or)   (go cs $ (u  .|.  v) : xs'') $
+      ite (c .== s'xor)  (go cs $ (u `xor` v) : xs'') $
+      ite (c .== s'plus) (go cs $ (u   +   v) : xs'') $
 
-      if null xs'' then false else
-      let z     = head xs''
+      if null xs'' then invalid else
+      let w     = head xs''
           xs''' = tail xs'' in
 
-      ite (c .== s'if0) (go cs $ ite (x .== 0) y z : xs''') $
+      ite (c .== s'if0) (go cs $ ite (u .== 0) v w : xs''') $
 
-      false
+      invalid
 
 
 possible :: [Op] -> [SCode]
