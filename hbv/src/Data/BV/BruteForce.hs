@@ -1,4 +1,4 @@
-module Data.BV.BruteForce (solve, allProgs) where
+module Data.BV.BruteForce (solve) where
 
 import           Data.List (sort, nub, nubBy)
 import           Data.Maybe (catMaybes)
@@ -9,11 +9,8 @@ import           Data.BV.Types
 
 ------------------------------------------------------------------------
 
-solve :: Problem -> Prog
-solve = undefined
-
-allProgs :: Problem -> [Prog]
-allProgs (Problem sz ops ios) =
+solve :: Problem -> [Prog]
+solve (Problem sz ops ios) =
     nubBy progEquiv . filter checkEval . filter checkOps . filter checkSize $ ps
   where
     ps = map Prog (allExprs (sz-1) ops [X])

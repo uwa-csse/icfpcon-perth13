@@ -26,7 +26,7 @@ main = do
     args <- cmdArgs hbvArgs
     case hbvMode args of
       Eval       -> evalStdin
-      SMT        -> smtStdin
+      SMT        -> smtStdin (all args)
       BruteForce -> bfStdin (all args)
       Compare    -> compareStdin
       QC         -> checkProps
@@ -77,7 +77,13 @@ evalStdin = do
 ------------------------------------------------------------------------
 
 bfStdin :: Bool -> IO ()
-bfStdin showAll = do
+bfStdin = solverStdin BF.solve
+
+smtStdin :: Bool -> IO ()
+smtStdin = solverStdin SMT.solve
+
+solverStdin :: (Problem -> [Prog]) -> Bool -> IO ()
+solverStdin solve showAll = do
     bs <- B.getContents
     let p = readProblem bs
         c = readComments bs
@@ -87,7 +93,7 @@ bfStdin showAll = do
       , ", IO = ", show (length (pIO p)), " pairs"
       ]
     hPutStrLn stdaux "======="
-    let ps = BF.allProgs p
+    let ps = solve p
     mapM_ (go c) $ if showAll then ps else take 1 ps
     hPutStrLn stdaux "======="
     B.hPutStr stdaux c
@@ -116,12 +122,3 @@ compareStdin = do
     parse bs name = case parseProg bs of
       Left err -> error ("hbv: cannot parse " ++ name ++ ": " ++ err)
       Right p  -> p
-
-------------------------------------------------------------------------
-
-smtStdin :: IO ()
-smtStdin = do
-    p <- readProblem <$> B.getContents
-    print p
-    putStrLn "======="
-    print (SMT.solve p)
