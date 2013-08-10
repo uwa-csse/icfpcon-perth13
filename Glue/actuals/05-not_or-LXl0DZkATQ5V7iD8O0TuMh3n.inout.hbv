@@ -1,0 +1,1 @@
+(lambda (x) (not (or 1 x)))

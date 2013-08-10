@@ -1,0 +1,1 @@
+(lambda (x) (plus x (shr4 (not (shr4 (shr16 x))))))

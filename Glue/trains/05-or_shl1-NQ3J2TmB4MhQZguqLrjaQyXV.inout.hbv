@@ -1,0 +1,7 @@
+Size = 5, Ops = [O2 Or,O1 Shl1], IO = 256 pairs
+=======
+(lambda (x) (shl1 (or 0 x)))
+(lambda (x) (shl1 (or x x)))
+(lambda (x) (or 0 (shl1 x)))
+=======
+(lambda (x_4080) (or 0 (shl1 x_4080)))

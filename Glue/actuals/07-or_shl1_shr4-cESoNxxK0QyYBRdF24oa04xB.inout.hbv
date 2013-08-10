@@ -1,0 +1,1 @@
+(lambda (x) (or (shl1 (shl1 x)) (shr4 x)))

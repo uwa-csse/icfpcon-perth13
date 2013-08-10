@@ -1,0 +1,1 @@
+(lambda (x) (fold x 0 (lambda (y z) (or y (plus y z)))))

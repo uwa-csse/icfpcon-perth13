@@ -7,7 +7,7 @@ from server import Server
 
 
 if (len(sys.argv) != 3):
-	print "usage: %s <size>", sys.argv[0]
+	print "usage: %s <size> <num-probs>", sys.argv[0]
 	exit (1)
 
 sz = sys.argv[1]

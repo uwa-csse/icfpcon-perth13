@@ -1,0 +1,1 @@
+(lambda (x) (xor 0 (plus x (not (shr1 0)))))

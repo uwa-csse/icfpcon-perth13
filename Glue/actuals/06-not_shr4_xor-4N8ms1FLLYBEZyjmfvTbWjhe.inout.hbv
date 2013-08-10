@@ -1,0 +1,1 @@
+(lambda (x) (shr4 (not (xor 0 x))))

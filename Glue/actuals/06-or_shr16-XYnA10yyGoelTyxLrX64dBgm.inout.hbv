@@ -1,0 +1,1 @@
+(lambda (x) (shr16 (or x (shr16 x))))

@@ -1,0 +1,1 @@
+(lambda (x) (shr1 (shl1 (and 1 (if0 0 x 0)))))

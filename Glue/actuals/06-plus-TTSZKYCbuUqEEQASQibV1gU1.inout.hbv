@@ -1,0 +1,1 @@
+(lambda (x) (plus 0 (plus 1 x)))

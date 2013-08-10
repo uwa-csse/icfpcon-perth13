@@ -1,0 +1,1 @@
+(lambda (x) (plus 0 (plus x (shr4 (shr1 x)))))

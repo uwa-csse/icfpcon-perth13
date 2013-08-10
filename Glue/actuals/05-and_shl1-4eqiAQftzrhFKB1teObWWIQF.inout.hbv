@@ -1,0 +1,1 @@
+(lambda (x) (and x (shl1 x)))

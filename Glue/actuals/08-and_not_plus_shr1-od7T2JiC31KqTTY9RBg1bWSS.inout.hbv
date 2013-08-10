@@ -1,0 +1,1 @@
+(lambda (x) (plus x (not (shr1 (and x x)))))

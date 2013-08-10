@@ -1,0 +1,1 @@
+(lambda (x) (xor 0 (and x (shr4 x))))
