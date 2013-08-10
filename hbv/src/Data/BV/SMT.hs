@@ -19,7 +19,7 @@ solve (Problem sz ops ios) = traceShow satProg [Prog Zero]
   where
     satProg :: [Code]
     satProg = unsafePerformIO $ do
-      m <- satWith z3 prog
+      m <- satWith yices prog
       case getModel m of
         Right (True, _)   -> error "hbv: backend solver reported \"unknown\""
         Right (False, xs) -> return xs
@@ -30,8 +30,7 @@ solve (Problem sz ops ios) = traceShow satProg [Prog Zero]
       (cs :: [SCode]) <- mkExistVars n
       constrain $ bAll (`sElem` ps) cs
       constrain $ bAll (`sElem` cs) rs
-      constrain $ bAll (correct cs) sios
-      return true
+      return $ bAll (correct cs) sios
 
     correct cs (i, o) = let (valid, o') = eval cs i
                         in valid &&& o .== o'
