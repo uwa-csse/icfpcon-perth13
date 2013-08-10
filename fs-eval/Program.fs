@@ -13,7 +13,7 @@ let eval () =
 
 [<EntryPoint>]
 let main argv = 
-    printfn "%A" (Satisfier.test [Satisfier.Shl1] [1UL] [2UL] 2)
+    printfn "%A" (Satisfier.bottomUp [Satisfier.Shl1; Satisfier.Shr1] [Satisfier.And] 6)
     System.Console.ReadLine()
     //printfn "%A" argv
     match argv.[0] with
