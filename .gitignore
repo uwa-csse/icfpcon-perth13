@@ -1,3 +1,4 @@
 dist/
 fs-eval/*.exe
 Glue/*.pyc
+*.swp
