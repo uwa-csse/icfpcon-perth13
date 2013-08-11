@@ -15,7 +15,7 @@ import           System.IO (stdout, stderr, hPutStrLn)
 
 import           Data.BV
 import qualified Data.BV.BruteForce as BF
-import qualified Data.BV.BruterForce as BRF
+--import qualified Data.BV.BruterForce as BRF
 import qualified Data.BV.SMT as SMT
 import           Data.BV.Explore
 import           Data.BV.SMTEval (progEquivInfo, exprEquivInfo)
@@ -30,7 +30,7 @@ main = do
       (0, Eval)        -> evalStdin
       (0, SMT)         -> smtStdin (all args)
       (0, BruteForce)  -> bfStdin (all args)
-      (0, RBruteForce) -> brfStdin (all args)
+      --(0, RBruteForce) -> brfStdin (all args)
       (0, Compare)     -> compareStdin
       (0, QC)          -> checkProps
       (depth, _)       -> findPerms depth
@@ -97,8 +97,8 @@ evalStdin = do
 bfStdin :: Bool -> IO ()
 bfStdin = solverStdin BF.solve
 
-brfStdin :: Bool -> IO ()
-brfStdin = solverStdin BRF.solve
+--brfStdin :: Bool -> IO ()
+--brfStdin = solverStdin BRF.solve
 
 smtStdin :: Bool -> IO ()
 smtStdin = solverStdin SMT.solve
