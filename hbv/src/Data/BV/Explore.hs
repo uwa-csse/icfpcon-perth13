@@ -15,7 +15,7 @@ import qualified Data.Vector as V
 import           Data.Word (Word64)
 
 import           Data.BV.Eval (Vars(..), evalExpr)
-import           Data.BV.SMTEval (exprEquiv)
+import           Data.BV.SMTEval (exprEquiv, exprEquivInfo)
 import           Data.BV.Types
 import           Data.BV.Parser (showExpr)
 
@@ -36,7 +36,7 @@ instance Hashable HExpr where
   hashWithSalt _ (SE h _) = h
 
 instance Eq HExpr where
-  (SE h0 e0) == (SE h1 e1) = h0 == h1 -- && e0 `exprEq` e1
+  (SE h0 e0) == (SE h1 e1) = h0 == h1 && e0 `exprEq` e1
     where
       exprEq e0 e1 | sn0 < sn1 = memoEquiv e0 e1
                    | otherwise = memoEquiv e1 e0
@@ -50,9 +50,11 @@ memoEquiv = memo2 go
     go x y | exprEquiv x y = True
            | otherwise     = trace collis False
       where
-        collis = "collision:"
+        collis = "Z3 Collision:"
               ++ "\n  " ++ showExpr x
               ++ "\n  " ++ showExpr y
+              ++ "\n" ++ exprEquivInfo x y
+              ++ "\n"
 
 hexpr :: Expr -> HExpr
 hexpr e = SE hashO e
@@ -72,16 +74,6 @@ varInputs = [(p, Vars x y z) | p <- primes | x <- inputs, y <- inputs, z <- inpu
              , 0xffffffffffffffff
              , 0xfffffffffffffff5
              , 0x1055555510333333
-             --, 0x00000000f0f0f0f0
-             --, 0x000000000000ff00
-             --, 0x000000000000ffff
-             --, 0x00000000ffff0000
-             --, 0x00000000ffffffff
-             --, 0x0f0f0f0f0f0f0f0f
-             --, 0xff00ff00ff00ff00
-             --, 0x00ff00ff00ff00ff
-             --, 0xffff0000ffff0000
-             --, 0x0000ffff0000ffff
              ]
 
 primes :: (Ord a, Enum a, Num a) => [a]
