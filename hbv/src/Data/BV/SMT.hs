@@ -17,9 +17,9 @@ import Debug.Trace
 solve :: Problem -> [Prog]
 solve (Problem sz ops ios) = traceShow satProg [Prog Zero]
   where
-    satProg :: [Code]
+    satProg :: [[Code]]
     satProg = unsafePerformIO $ do
-      m <- satWith yices prog
+      m <- satWith z3 { timing = True, smtFile = Just "smt.txt" } prog
       case getModel m of
         Right (True, _)   -> error "hbv: backend solver reported \"unknown\""
         Right (False, xs) -> return xs
@@ -60,11 +60,9 @@ eval prog x = go prog []
     go [] _      = invalid -- invalid: stack has more than one value
 
     go (c:cs) xs =
-      ite (c .== s'0) (go cs $ 0  : xs) $
-      ite (c .== s'1) (go cs $ 1  : xs) $
-      ite (c .== s'x) (go cs $ x  : xs) $
-      ite (c .== s'y) (go cs $ -1 : xs) $
-      ite (c .== s'z) (go cs $ -1 : xs) $
+      ite (c .== s'0) (go cs $ 0 : xs) $
+      ite (c .== s'1) (go cs $ 1 : xs) $
+      ite (c .== s'x) (go cs $ x : xs) $
 
       if null xs then invalid else
       let u   = head xs

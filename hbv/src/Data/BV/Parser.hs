@@ -4,7 +4,9 @@
 module Data.BV.Parser (
       parseProg
     , showProg
+    , showExpr
     , encodeProg
+    , encodeExpr
     , readProblem
     , readComments
     ) where
@@ -147,10 +149,16 @@ readComments = B.unlines . map clean . filter isComment . B.lines
 -- Pretty Printing
 
 showProg :: Prog -> String
-showProg = B.unpack . encodeProg
+showProg = B.unpack . encode
+
+showExpr :: Expr -> String
+showExpr = B.unpack . encode
 
 encodeProg :: Prog -> B.ByteString
 encodeProg = encode
+
+encodeExpr :: Expr -> B.ByteString
+encodeExpr = encode
 
 instance ToLisp Prog where
     toLisp (Prog e) = mkStruct "lambda" [List [Symbol "x"], toLisp e]
