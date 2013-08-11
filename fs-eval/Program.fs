@@ -13,7 +13,9 @@ let eval () =
 
 [<EntryPoint>]
 let main argv = 
-    printfn "%A" (Satisfier.bottomUp 2)
+    Satisfier.bottomUp 12 |> Array.iter (Seq.iter (fun _ -> ()))
+    //Satisfier.bottomUp 3 |> Array.iter (Seq.iter (printfn "%A"))
+    printfn "done"
     System.Console.ReadLine()
     //printfn "%A" argv
     match argv.[0] with
