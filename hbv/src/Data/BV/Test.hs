@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
@@ -18,12 +19,12 @@ import           Data.BV.Types
 checkProps :: IO ()
 checkProps = quickCheck prop_encode_decode
 
-prop_encode_decode p = case ep' of
+prop_encode_decode (p :: Prog) = case ep' of
     Left err -> error ("parse-failed: " ++ err ++ "\n" ++ B.unpack bs)
     Right p' -> p == p'
   where
-    bs  = encodeProg p
-    ep' = parseProg bs
+    bs  = encode p
+    ep' = parse bs
 
 ------------------------------------------------------------------------
 -- Arbitrary

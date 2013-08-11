@@ -11,13 +11,22 @@ executable hbv
   main-is: Main.hs
   hs-source-dirs: src
   build-depends:
-      base       >= 4.5
-    , QuickCheck == 2.5.*
-    , atto-lisp  == 0.2.*
-    , attoparsec == 0.10.*
-    , bytestring == 0.10.*
-    , cmdargs    == 0.10.*
-    , sbv        == 2.10.*
-    , text       == 0.11.*
+      base                 >= 4.5
+    , QuickCheck           >= 2.5
+    , atto-lisp            == 0.2.*
+    , attoparsec           == 0.10.*
+    , bytestring           == 0.10.*
+    , cmdargs              == 0.10.*
+    , hashable             >= 1.2.0.10
+    , sbv                  == 2.10.*
+    --, sbv                  == 3.0.2013
+    , stable-memo          == 0.2.*
+    , text                 == 0.11.*
+    , unordered-containers >= 0.2.3.1
+    , vector               == 0.10.*
 
-  ghc-options: -O2 -Wall -threaded
+  ghc-options:
+    -O2 -Wall -threaded -fllvm
+    -funfolding-use-threshold=16
+    -funbox-strict-fields
+    -- -prof -auto-all

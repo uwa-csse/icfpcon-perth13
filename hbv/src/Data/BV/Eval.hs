@@ -11,7 +11,7 @@ import Data.BV.Types
 
 ------------------------------------------------------------------------
 
-data Vars = Vars Word64 Word64 Word64
+data Vars = Vars !Word64 !Word64 !Word64
   deriving (Show)
 
 evalProg :: Prog -> Word64 -> Word64

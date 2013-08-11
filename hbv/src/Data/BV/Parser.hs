@@ -2,11 +2,10 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Data.BV.Parser (
-      parseProg
+      parse
+    , encode
     , showProg
     , showExpr
-    , encodeProg
-    , encodeExpr
     , readProblem
     , readComments
     ) where
@@ -26,8 +25,8 @@ import           Data.BV.Types
 ------------------------------------------------------------------------
 -- Parsing
 
-parseProg :: B.ByteString -> Either String Prog
-parseProg bs = case el of
+parse :: FromLisp l => B.ByteString -> Either String l
+parse bs = case el of
     Left err -> Left err
     Right l  -> case fromLisp (fixIdents l) of
       Error err -> Left $ err ++ ": " ++ show (fixIdents l)
@@ -54,7 +53,7 @@ replaceIdents = go
 
 
 instance IsString Prog where
-    fromString s = case parseProg (B.pack s) of
+    fromString s = case parse (B.pack s) of
       Left err -> error $ "fromString: cannot parse program: " ++ err
       Right p  -> p
 
@@ -153,12 +152,6 @@ showProg = B.unpack . encode
 
 showExpr :: Expr -> String
 showExpr = B.unpack . encode
-
-encodeProg :: Prog -> B.ByteString
-encodeProg = encode
-
-encodeExpr :: Expr -> B.ByteString
-encodeExpr = encode
 
 instance ToLisp Prog where
     toLisp (Prog e) = mkStruct "lambda" [List [Symbol "x"], toLisp e]

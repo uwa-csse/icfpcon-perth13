@@ -18,7 +18,7 @@ import qualified Data.BV.BruteForce as BF
 import qualified Data.BV.BruterForce as BRF
 import qualified Data.BV.SMT as SMT
 import           Data.BV.Explore
-import           Data.BV.SMTEval (progEquivInfo)
+import           Data.BV.SMTEval (progEquivInfo, exprEquivInfo)
 import           Data.BV.Test (checkProps)
 
 ------------------------------------------------------------------------
@@ -27,13 +27,13 @@ main :: IO ()
 main = do
     args <- cmdArgs hbvArgs
     case (perms args, hbvMode args) of
-      (depth, _)      -> findPerms depth
-      (_, Eval)       -> evalStdin
-      (_, SMT)        -> smtStdin (all args)
-      (_, BruteForce) -> bfStdin (all args)
-      (_, RBruteForce) -> brfStdin (all args)
-      (_, Compare)    -> compareStdin
-      (_, QC)         -> checkProps
+      (0, Eval)        -> evalStdin
+      (0, SMT)         -> smtStdin (all args)
+      (0, BruteForce)  -> bfStdin (all args)
+      (0, RBruteForce) -> brfStdin (all args)
+      (0, Compare)     -> compareStdin
+      (0, QC)          -> checkProps
+      (depth, _)       -> findPerms depth
 
 ------------------------------------------------------------------------
 
@@ -62,11 +62,11 @@ hbvArgs = HbvArgs {
 
 findPerms :: Int -> IO ()
 findPerms depth = do
-    mapM_ go (zip [1..] $ explore depth)
+    mapM_ go (allExprs $ explore depth)
   where
     go (n, es) = do
       putStrLn ("# Size: " ++ show n)
-      mapM_ (putStrLn . showExpr . seExpr) es
+      mapM_ (putStrLn . showExpr) es
       putStrLn ""
 
 ------------------------------------------------------------------------
@@ -76,7 +76,7 @@ evalStdin = do
     inp <- B.lines <$> B.getContents
     case inp of
       []     -> putStrLn "hbv: no input"
-      (x:xs) -> case parseProg x of
+      (x:xs) -> case parse x of
         Left err -> putStrLn ("hbv: " ++ err)
         Right p  -> do
           putStrLn ("parsed: " ++ show p)
@@ -124,7 +124,7 @@ solverStdin solve showAll = do
     go c p = do
       putStrLn (showProg p)
       when ("(lambda" `B.isPrefixOf` c) $ do
-        case parseProg (head $ B.lines c) of
+        case parse (head $ B.lines c) of
           Left err -> hPutStrLn stdaux ("hbv: cannot parse challenge: " ++ err)
           Right cp -> hPutStrLn stdaux (progEquivInfo p cp)
 
@@ -132,14 +132,15 @@ solverStdin solve showAll = do
 
 compareStdin :: IO ()
 compareStdin = do
+    putStrLn "compare"
     bs <- B.lines <$> B.getContents
     case bs of
       (b1:b2:_) -> do
-        let p1 = parse b1 "first program"
-            p2 = parse b2 "second program"
-        putStrLn (progEquivInfo p1 p2)
+        let e1 = parse' b1 "first expr"
+            e2 = parse' b2 "second expr"
+        putStrLn (exprEquivInfo e1 e2)
       _         -> hPutStrLn stderr "hbv: need two programs to compare"
   where
-    parse bs name = case parseProg bs of
+    parse' bs name = case parse bs of
       Left err -> error ("hbv: cannot parse " ++ name ++ ": " ++ err)
       Right p  -> p

@@ -18,16 +18,16 @@ import Data.Word (Word64)
 ------------------------------------------------------------------------
 -- Types
 
-data Prog = Prog Expr
+data Prog = Prog !Expr
   deriving (Eq, Ord, Show)
 
 data Expr = Zero
           | One
-          | Id Id
-          | If0  Expr Expr Expr
-          | Fold Expr Expr Expr
-          | Op1 Op1 Expr
-          | Op2 Op2 Expr Expr
+          | Id !Id
+          | If0  !Expr !Expr !Expr
+          | Fold !Expr !Expr !Expr
+          | Op1 !Op1 !Expr
+          | Op2 !Op2 !Expr !Expr
   deriving (Eq, Ord, Show)
 
 data Id = X | Y | Z
@@ -49,7 +49,7 @@ data Problem = Problem {
 
 type Size = Int
 
-data Op = O1 Op1 | O2 Op2 | OIf0 | OTFold | OFold
+data Op = O1 !Op1 | O2 !Op2 | OIf0 | OTFold | OFold
   deriving (Eq, Ord, Show)
 
 ------------------------------------------------------------------------

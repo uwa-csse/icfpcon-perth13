@@ -1,105 +1,174 @@
+{-# LANGUAGE ParallelListComp #-}
+{-# OPTIONS_GHC -w #-}
+
 module Data.BV.Explore (
-      SubExpr(..)
+      HExprSet(..)
+    , HExpr(..)
+    , allExprs
     , explore
     ) where
 
-import Data.List (union)
-import Data.Word (Word64)
+import           Data.Bits
+import qualified Data.HashMap.Strict as M
+import           Data.Hashable
+import qualified Data.Vector as V
+import           Data.Word (Word64)
 
-import Data.BV.Eval (Vars(..), evalExpr)
-import Data.BV.SMTEval (progEquiv)
-import Data.BV.Types
+import           Data.BV.Eval (Vars(..), evalExpr)
+import           Data.BV.SMTEval (exprEquiv)
+import           Data.BV.Types
+import           Data.BV.Parser (showExpr)
 
-------------------------------------------------------------------------
+import           Data.StableMemo (memo2)
+import System.Mem.StableName
+import System.IO.Unsafe (unsafePerformIO)
 
-data SubExpr = SE {
-      seExpr   :: Expr
-    , seIds    :: [Id]
-    , seOutput :: [Word64]
-    } deriving (Eq, Show)
-
-------------------------------------------------------------------------
-
-explore :: Int -> [[SubExpr]]
-explore 0 = []
-explore 1 = [[ subE Zero   []
-             , subE One    []
-             , subE (Id X) [X]
-             --, subE (Id Y) [Y]
-             --, subE (Id Z) [Z]
-             ]]
-explore n = es ++ [cull (concat es) $ op1s n es ++ op2s n es ++ if0 n es]
-  where
-    es = explore (n-1)
+import           Debug.Trace
 
 ------------------------------------------------------------------------
 
-op1s :: Int -> [[SubExpr]] -> [SubExpr]
-op1s n ess = concatMap (op1 n ess) [Not, Shl1, Shr1, Shr4, Shr16]
+data HExpr = SE {
+    heHash :: !Int
+  , heExpr :: !Expr
+  } deriving (Show)
 
-op2s :: Int -> [[SubExpr]] -> [SubExpr]
-op2s n ess = concatMap (op2 n ess) [And, Or, Xor, Plus]
+instance Hashable HExpr where
+  hashWithSalt _ (SE h _) = h
 
-op1 :: Int -> [[SubExpr]] -> Op1 -> [SubExpr]
-op1 n ess o = [ subE (Op1 o e) i
-              | es <- take (n-1) ess
-              , (SE e i _) <- es ]
+instance Eq HExpr where
+  (SE h0 e0) == (SE h1 e1) = h0 == h1 -- && e0 `exprEq` e1
+    where
+      exprEq e0 e1 | sn0 < sn1 = memoEquiv e0 e1
+                   | otherwise = memoEquiv e1 e0
 
-op2 :: Int -> [[SubExpr]] -> Op2 -> [SubExpr]
-op2 n ess o = [ subE (Op2 o e1 e2) (i1 `union` i2)
-              | (n1, es1) <- zip [1..] $ take (n-2) ess
-              , es2 <- take (n-n1-1) ess
-              , (SE e1 i1 _) <- es1
-              , (SE e2 i2 _) <- es2 ]
+      sn0 = hashStableName (unsafePerformIO (makeStableName e0))
+      sn1 = hashStableName (unsafePerformIO (makeStableName e1))
 
-if0 :: Int -> [[SubExpr]] -> [SubExpr]
-if0 n ess = [ subE (If0 e1 e2 e3) (i1 `union` i2 `union` i3)
-            | (n1, es1) <- zip [1..] $ take (n-3) ess
-            , (n2, es2) <- zip [1..] $ take (n-n1-2) ess
-            , es3 <- take (n-n1-n2-1) ess
-            , (SE e1 i1 _) <- es1
-            , (SE e2 i2 _) <- es2
-            , (SE e3 i3 _) <- es3
-            ]
-
-------------------------------------------------------------------------
-
-cull :: [SubExpr] -> [SubExpr] -> [SubExpr]
-cull existExprs newExprs = go newExprs existExprs
+memoEquiv :: Expr -> Expr -> Bool
+memoEquiv = memo2 go
   where
-    go []     _  = []
-    go (e:es) [] = [e] ++ go es [e]
-    go (e:es) xs | any (`exprEquiv` e) xs = go es xs
-                 | otherwise              = [e] ++ go es (e:xs)
+    go x y | exprEquiv x y = True
+           | otherwise     = trace collis False
+      where
+        collis = "collision:"
+              ++ "\n  " ++ showExpr x
+              ++ "\n  " ++ showExpr y
 
-exprEquiv :: SubExpr -> SubExpr -> Bool
-exprEquiv (SE e1 _ o1) (SE e2 _ o2) =
-    --o1 == o2 && qed
-    o1 == o2
-    -- False
+hexpr :: Expr -> HExpr
+hexpr e = SE hashO e
   where
-    qed = Prog e1 `progEquiv` Prog e2
+    outputs = [(p + evalExpr v e) | (p, v) <- varInputs]
+    hashO   = hash outputs
 
-subE :: Expr -> [Id] -> SubExpr
-subE e ids = SE e ids $ map eval inputs
+type Prime = Word64
+
+varInputs :: [(Prime, Vars)]
+varInputs = [(p, Vars x y z) | p <- primes | x <- inputs, y <- inputs, z <- inputs]
   where
-    eval x = evalExpr (Vars x 0 0) e
-
-    -- TODO: Better numbers
     inputs = [ 0x0000000000000000
              , 0x0000000000000001
-             , 0x00000000000000ff
-             , 0x000000000000ff00
-             , 0x000000000000ffff
-             , 0x00000000ffff0000
-             , 0x00000000ffffffff
+             , 0x000000000000000f
              , 0xffffffff00000000
              , 0xffffffffffffffff
-             , 0xfffffffffffffffe
-             , 0xf0f0f0f0f0f0f0f0
-             , 0x0f0f0f0f0f0f0f0f
-             , 0xff00ff00ff00ff00
-             , 0x00ff00ff00ff00ff
-             , 0xffff0000ffff0000
-             , 0x0000ffff0000ffff
+             , 0xfffffffffffffff5
+             , 0x1055555510333333
+             --, 0x00000000f0f0f0f0
+             --, 0x000000000000ff00
+             --, 0x000000000000ffff
+             --, 0x00000000ffff0000
+             --, 0x00000000ffffffff
+             --, 0x0f0f0f0f0f0f0f0f
+             --, 0xff00ff00ff00ff00
+             --, 0x00ff00ff00ff00ff
+             --, 0xffff0000ffff0000
+             --, 0x0000ffff0000ffff
              ]
+
+primes :: (Ord a, Enum a, Num a) => [a]
+primes = 2 : eratos [3,5..]
+  where
+    eratos []     = []
+    eratos (p:xs) = p : eratos (xs `minus` [p, p+2*p..])
+
+    minus  xs    []     = xs
+    minus (x:xs) (y:ys) = case (compare x y) of
+        LT -> x : minus  xs  (y:ys)
+        EQ ->     minus  xs     ys
+        GT ->     minus (x:xs)  ys
+
+    union  xs     []    = xs
+    union  []     ys    = ys
+    union (x:xs) (y:ys) = case (compare x y) of
+        LT -> x : union  xs  (y:ys)
+        EQ -> x : union  xs     ys
+        GT -> y : union (x:xs)  ys
+
+------------------------------------------------------------------------
+
+data HExprSet = HExprSet {
+    hsExprs      :: M.HashMap HExpr ()
+  , hsSizedExprs :: M.HashMap Int (V.Vector Expr)
+  }
+
+insert :: Expr -> HExprSet -> HExprSet
+insert e orig@(HExprSet es ses)
+    | M.member h es = orig
+    | otherwise     = HExprSet es' ses'
+  where
+    h    = hexpr e
+    es'  = M.insert h () es
+    ses' = M.insertWith (V.++) sz (V.singleton e) ses
+    sz   = exprSize e
+
+insertAll :: HExprSet -> [Expr] -> HExprSet
+insertAll set es = foldr insert set es
+
+depth :: Int -> HExprSet -> [[Expr]]
+depth n (HExprSet _ ses) = map go [1..n]
+  where
+    go x = V.toList . M.lookupDefault V.empty x $ ses
+
+empty :: HExprSet
+empty = HExprSet M.empty M.empty
+
+explore :: Int -> HExprSet
+explore 0 = empty
+
+explore 1 = insertAll empty [Zero, One, Id X, Id Y, Id Z]
+
+explore n = insertAll set $ op1s n set ++ op2s n set ++ if0 n set
+  where
+    set = explore (n-1)
+
+allExprs :: HExprSet -> [(Int, [Expr])]
+allExprs (HExprSet _ ses) = map (\(i,v) -> (i, V.toList v)) (M.toList ses)
+
+------------------------------------------------------------------------
+
+op1s :: Int -> HExprSet -> [Expr]
+op1s n set = concatMap (op1 n set) [Not, Shl1, Shr1, Shr4, Shr16]
+
+op2s :: Int -> HExprSet -> [Expr]
+op2s n set = concatMap (op2 n set) [And, Or, Xor, Plus]
+
+op1 :: Int -> HExprSet -> Op1 -> [Expr]
+op1 n set o = [ Op1 o e
+              | es <- depth n set
+              , e <- es ]
+
+op2 :: Int -> HExprSet -> Op2 -> [Expr]
+op2 n set o = [ Op2 o e1 e2
+              | (n1, es1) <- zip [1..] $ depth (n-2) set
+              , es2 <- depth (n-n1-1) set
+              , e1 <- es1
+              , e2 <- es2 ]
+
+if0 :: Int -> HExprSet -> [Expr]
+if0 n set = [ If0 e1 e2 e3
+            | (n1, es1) <- zip [1..] $ depth (n-3) set
+            , (n2, es2) <- zip [1..] $ depth (n-n1-2) set
+            , es3 <- depth (n-n1-n2-1) set
+            , e1 <- es1
+            , e2 <- es2
+            , e3 <- es3
+            ]
