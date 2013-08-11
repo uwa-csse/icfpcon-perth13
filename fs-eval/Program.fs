@@ -13,7 +13,7 @@ let eval () =
 
 [<EntryPoint>]
 let main argv = 
-    Satisfier.bottomUp 12 |> Array.iter (Seq.iter (fun _ -> ()))
+    printfn "%d" ( Satisfier.bottomUp 12 |> Array.sumBy (fun s -> Seq.length s) )
     //Satisfier.bottomUp 3 |> Array.iter (Seq.iter (printfn "%A"))
     printfn "done"
     System.Console.ReadLine()

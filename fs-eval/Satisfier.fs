@@ -30,18 +30,14 @@ type ValidSpecialOp =
 
 let atoms = [Type.Atom(Type.Zero); Type.Atom(Type.One); Type.Atom(Type.Id(Type.X))]
 
-type Satisfied = {
-    //opsUsed : int;
-    program : Type.Expr; ///the program
-    //folded : bool  //whether or not the program has been folded
-}
+type Satisfied = Type.Expr
 
-let zeroProg = { (*opsUsed = 0;*) program = Type.Atom(Type.Zero) }
-let oneProg = { zeroProg with program = Type.Atom(Type.One) }
-let xProg = { zeroProg with program = Type.Atom(Type.Id(Type.X)) }
-let yProg = { zeroProg with program = Type.Atom(Type.Id(Type.Y))}
-let zProg = { yProg with program = Type.Atom(Type.Id(Type.Z)) }
-let singletonPrograms = [| zeroProg; oneProg; xProg; |] //yProg; zProg ]
+let zeroProg = Type.Atom(Type.Zero) 
+let oneProg = Type.Atom(Type.One)
+let xProg = Type.Atom(Type.Id(Type.X))
+let yProg = Type.Atom(Type.Id(Type.Y))
+let zProg = Type.Atom(Type.Id(Type.Z))
+let singletonPrograms = [| zeroProg; oneProg; xProg; yProg; zProg |]
 
 let unOpCode = function
     | Not -> Type.Not   
@@ -56,35 +52,21 @@ let binOpCode = function
     | Xor -> Type.Xor
     | Plus -> Type.Plus
 
-//all these index functions are used to shift bits in the bitset
-let unOpIndex = function
-    | Not -> 0
-    | Shl1 -> 1
-    | Shr1 -> 2
-    | Shr4 -> 3
-    | Shr16 -> 4
-
-let binOpIndex = function
-    | And -> 5
-    | Or -> 6
-    | Xor -> 7
-    | Plus -> 8
-
-let specialOpIndex = function
-    | Fold -> 9
-    //| TFold
-    | If0 -> 10
 
 let rnd = System.Random()
-let ios = Array.init 8 (fun _ -> (rnd.Next() |> uint64, ConHashSet() ) )
+let ios = Array.init 16 (fun _ -> (rnd.Next() |> uint64, ConHashSet() ) )
+
+//this function does a quick cull of satisfied programs
+//it just tries some random inputs, and gets rid of programs that have no unique outputs
+//Its extremely parallel
 let quickCull sats = 
     //printfn "CULL!"
     Array.Parallel.map (
-        fun {program = prog} -> 
+        fun prog -> 
             let inserts = Array.map (fun (input, (oSet:ConHashSet) ) -> 
                 //printfn "%d -> %d   %A" input (Solver.eval input prog) prog
                 oSet.Add(Solver.eval input prog)) ios
-            if Array.tryFind id inserts |> Option.isSome then Some({program = prog})
+            if Array.tryFind id inserts |> Option.isSome then Some(prog)
             else None
     ) sats
     |> Array.filter (fun a -> Option.isSome a) |> Array.map (fun a -> Option.get a)
@@ -102,21 +84,13 @@ let bottomUp maxSize =
         sols.[size-1] <- [|
             //generate unary operators which only 1 to the size
             for sol in sols.[size-2] do
-                match sol with
-                | { program = p } as sat -> 
-                    for op in unOpSet -> 
-                        {sat with 
-                            program = Type.Unary(unOpCode op, p); }
-                            //opsUsed = sat.opsUsed ||| (1 <<< unOpIndex op);}
+                for op in unOpSet -> Type.Unary(unOpCode op, sol)
             //generate binary operators
             for i in 1..(size-2) do //loop through all left-hand expression sizes for a binary operator
                 let j = (size-1) - i //calculate the right hand expr size
                 for op in binOpSet do
                     for iExpr in sols.[i-1] do
-                        for jExpr in sols.[j-1] ->
-                            { program = Type.Binary(binOpCode op, iExpr.program, jExpr.program); }
-                                //opsUsed = (iExpr.opsUsed ||| jExpr.opsUsed) ||| (1 <<< binOpIndex op);
-                                //folded = iExpr.folded || jExpr.folded }
+                        for jExpr in sols.[j-1] -> Type.Binary(binOpCode op, iExpr, jExpr)
 
             //generate if0 expr
             for i in 1..(size-3) do
@@ -125,22 +99,7 @@ let bottomUp maxSize =
                         if i + j + k = maxSize - 1 then
                             for iExpr in sols.[i-1] do
                                 for jExpr in sols.[j-1] do
-                                    for kExpr in sols.[k-1] ->
-                                        { program = Type.If0(iExpr.program, jExpr.program, kExpr.program); }
-                                            //opsUsed = (iExpr.opsUsed ||| jExpr.opsUsed ||| kExpr.opsUsed) ||| (1 <<< specialOpIndex If0);
-                                          //folded = iExpr.folded || jExpr.folded || kExpr.folded }
-            //generate fold expr
-            for i in 1..(size-4) do
-                for j in 1..(size-4) do
-                    for k in 1..(size-4) do
-                        if i + j + k = maxSize - 1 then
-                            for iExpr in sols.[i-1]  do //Y cant be folded
-                                for jExpr in sols.[j-1]  do //Z cant be folded
-                                    for kExpr in sols.[k-1] -> //the inner program must be folded, since this is a fold
-                                        { program = Type.Fold((iExpr.program, jExpr.program), kExpr.program); }
-                                            //opsUsed = (iExpr.opsUsed ||| jExpr.opsUsed ||| kExpr.opsUsed) ||| (1 <<< specialOpIndex Fold);
-                                           // folded = true} //set folded to true to prevent multiple folds
-                    
+                                    for kExpr in sols.[k-1] -> Type.If0(iExpr, jExpr, kExpr)
         |] |> quickCull
 
     sols
