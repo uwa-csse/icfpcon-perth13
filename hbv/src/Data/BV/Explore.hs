@@ -8,20 +8,22 @@ module Data.BV.Explore (
     , explore
     ) where
 
+import           Control.Parallel.Strategies (using, parListChunk, rseq)
 import           Data.Bits
 import qualified Data.HashMap.Strict as M
 import           Data.Hashable
+import           Data.Maybe (catMaybes, mapMaybe)
+import           Data.StableMemo (memo2)
 import qualified Data.Vector as V
 import           Data.Word (Word64)
+import           GHC.Conc (getNumCapabilities)
+import           System.IO.Unsafe (unsafePerformIO)
+import           System.Mem.StableName
 
 import           Data.BV.Eval (Vars(..), evalExpr)
 import           Data.BV.SMTEval (exprEquiv, exprEquivInfo)
 import           Data.BV.Types
 import           Data.BV.Parser (showExpr)
-
-import           Data.StableMemo (memo2)
-import System.Mem.StableName
-import System.IO.Unsafe (unsafePerformIO)
 
 import           Debug.Trace
 
@@ -103,17 +105,27 @@ data HExprSet = HExprSet {
   }
 
 insert :: Expr -> HExprSet -> HExprSet
-insert e orig@(HExprSet es ses)
-    | M.member h es = orig
-    | otherwise     = HExprSet es' ses'
+insert e orig@(HExprSet es ses) = HExprSet es' ses'
   where
     h    = hexpr e
     es'  = M.insert h () es
     ses' = M.insertWith (V.++) sz (V.singleton e) ses
     sz   = exprSize e
 
+member :: Expr -> HExprSet -> Bool
+member e (HExprSet es _) = M.member (hexpr e) es
+
 insertAll :: HExprSet -> [Expr] -> HExprSet
-insertAll set es = foldr insert set es
+insertAll set es = foldr insert set (catMaybes mes)
+  where
+    n = length es
+    mes = map go es `using` parListChunk (n `div` numCapabilities) rseq
+
+    go e | member e set = Nothing
+         | otherwise    = Just e
+
+numCapabilities :: Int
+numCapabilities = unsafePerformIO getNumCapabilities
 
 depth :: Int -> HExprSet -> [[Expr]]
 depth n (HExprSet _ ses) = map go [1..n]

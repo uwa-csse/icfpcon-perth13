@@ -8,6 +8,7 @@ import           Control.Applicative ((<$>))
 import           Control.Monad (when)
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Word (Word64)
+import           GHC.Conc (getNumProcessors, setNumCapabilities)
 import           Numeric (showHex)
 import           Prelude hiding (all)
 import           System.Console.CmdArgs
@@ -25,7 +26,10 @@ import           Data.BV.Test (checkProps)
 
 main :: IO ()
 main = do
-    args <- cmdArgs hbvArgs
+    cpus <- getNumProcessors
+    setNumCapabilities cpus
+
+    args <- cmdArgs (hbvArgs cpus)
     case (perms args, hbvMode args) of
       (0, Eval)        -> evalStdin
       (0, SMT)         -> smtStdin (all args)
@@ -46,17 +50,17 @@ data HbvArgs = HbvArgs {
 data HbvMode = Eval | SMT | BruteForce | RBruteForce | Compare | QC
   deriving (Show, Data, Typeable)
 
-hbvArgs = HbvArgs {
-    hbvMode = enum [ Eval       &= help "Evaluate program from stdin (default)"
-                   , SMT        &= help "Solve problem from stdin using SMT solver"
-                   , BruteForce &= help "Solve problem from stdin using brute-force solver"
+hbvArgs cpus = HbvArgs {
+    hbvMode = enum [ Eval        &= help "Evaluate program from stdin (default)"
+                   , SMT         &= help "Solve problem from stdin using SMT solver"
+                   , BruteForce  &= help "Solve problem from stdin using brute-force solver"
                    , RBruteForce &= help "Solve problem from stdin using bruter-force solver"
-                   , Compare    &= help "Compare two programs from stdin for equivalence"
-                   , QC         &= help "QuickCheck self test"
+                   , Compare     &= help "Compare two programs from stdin for equivalence"
+                   , QC          &= help "QuickCheck self test"
                    ]
   , all   = False &= help "Show all possible solutions instead of quitting after one"
   , perms = 0     &= help "Enumerate all functionally unique programs up to the specified depth"
-  } &= summary "HBV v0.1"
+  } &= summary ("HBV v0.1 (running on " ++ show cpus ++ " processors)")
 
 ------------------------------------------------------------------------
 
