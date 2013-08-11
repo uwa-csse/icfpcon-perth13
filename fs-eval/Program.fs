@@ -13,7 +13,14 @@ let eval () =
 
 [<EntryPoint>]
 let main argv = 
-    printfn "%d" ( Satisfier.bottomUp 12 |> Array.sumBy (fun s -> Seq.length s) )
+    let sz = 12
+    let progs = Satisfier.bottomUp sz
+    printfn "%d" ( progs  |> Array.sumBy (fun s -> Seq.length s) )
+    let tnow = System.DateTime.Now
+    let tstr = string tnow.Hour + string tnow.Minute + "." + string tnow.Second
+    for i=1 to sz do
+        System.IO.File.WriteAllLines("eqclasses" + string i + "-" + tstr + ".txt",
+                                     progs.[i-1] |> Seq.map Deparser.exprAsStr )
     //Satisfier.bottomUp 3 |> Array.iter (Seq.iter (printfn "%A"))
     printfn "done"
     System.Console.ReadLine()

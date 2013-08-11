@@ -56,6 +56,22 @@ let binOpCode = function
 let rnd = System.Random()
 let ios = Array.init 16 (fun _ -> (rnd.Next() |> uint64, ConHashSet() ) )
 
+
+let groupsOfAtMost (size: int) (s: seq<'v>) : seq<array<'v>> =
+  seq { let en = s.GetEnumerator ()
+        let more = ref true
+        while !more do
+            let i = ref 0
+            let group = [|  let i = ref 0
+                            while !i < size && en.MoveNext () do
+                            yield en.Current
+                            i := !i + 1 |]
+            if group.Length=0 then
+                more := false
+            else
+                yield group
+    }
+
 //this function does a quick cull of satisfied programs
 //it just tries some random inputs, and gets rid of programs that have no unique outputs
 //Its extremely parallel
@@ -81,7 +97,8 @@ let bottomUp maxSize =
     sols.[0] <- singletonPrograms |> quickCull
     for size in 2..maxSize do
         printfn "%d" size
-        sols.[size-1] <- [|
+        sols.[size-1] <-
+         seq {
             //generate unary operators which only 1 to the size
             for sol in sols.[size-2] do
                 for op in unOpSet -> Type.Unary(unOpCode op, sol)
@@ -90,7 +107,7 @@ let bottomUp maxSize =
                 let j = (size-1) - i //calculate the right hand expr size
                 for op in binOpSet do
                     for iExpr in sols.[i-1] do
-                        for jExpr in sols.[j-1] -> Type.Binary(binOpCode op, iExpr, jExpr)
+                        for jExpr in sols.[j-1] do if iExpr <= jExpr then yield Type.Binary(binOpCode op, iExpr, jExpr)
 
             //generate if0 expr
             for i in 1..(size-3) do
@@ -100,7 +117,7 @@ let bottomUp maxSize =
                             for iExpr in sols.[i-1] do
                                 for jExpr in sols.[j-1] do
                                     for kExpr in sols.[k-1] -> Type.If0(iExpr, jExpr, kExpr)
-        |] |> quickCull
+         } |> groupsOfAtMost 1024   |> Seq.map quickCull |> Seq.concat |> Array.ofSeq
 
     sols
 
