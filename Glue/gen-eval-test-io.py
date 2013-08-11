@@ -6,27 +6,28 @@ import subprocess
 from server import Server
 
 ##################
-training = True ##   ## Don't make it live unless you mean it!!  Let's keep a perfect safety record! 
+training = False ##   ## Don't make it live unless you mean it!!  Let's keep a perfect safety record! 
 ##################
 
-if (len(sys.argv) != 2):
+if (len(sys.argv) != 3):
 	print "usage: %s <size>" % sys.argv[0]
 	exit (1)
 
 s = Server()
 
-if training:
-    sz = sys.argv[1]
-    probs = [ s.get_training_problem(int(sz)) ]
+if not training:
+    sz = int (sys.argv[1])
+#    probs = [ s.get_training_problem(int(sz)) ]
 #else:
 #    probs = json.load(open("problems.json"))
-#    probs = s.get_problems()    ## LIVE!!
+    nskip = int (sys.argv[2])
+    probs = s.get_problems()    ## LIVE!!
 
 
 # sort on size
 probs = sorted(probs, lambda x,y: cmp(x["size"], y["size"]))
 
-#probs = [ p for p in probs if p['size'] <= 8 and ((not 'solved' in p) or not p['solved']) ]
+probs = [ p for p in probs if p['size'] >= sz and ((not 'solved' in p) or not p['solved']) ][nskip:]
 
 #probs = [ p for p in probs if p['size'] > 8 and  p['size'] <= 11 and ((not 'solved' in p) or not p['solved']) and 'tfold' in p['operators'] ]
 
@@ -54,10 +55,21 @@ for prob in probs:
     inout_file.write("%d %s\n" % (prob['size'], opstr2))
 
     in_sent = 0
-		    ## Some probably useful values
-    inputs = [0, 1, 0xffffffffffffffff, 0x00000000ffffffff, 0xffffffff00000000, 0x5555555555555555, 0xaaaaaaaaaaaaaaaa, 
-		    0x3333333333333333, 0xcccccccccccccccc, 0x0f0f0f0f0f0f0f0f, 0xf0f0f0f0f0f0f0f0, 
-		    0x00ff00ff00ff00ff, 0xff00ff00ff00ff00, 0x0000ffff0000ffff, 0xffff0000ffff0000]
+
+    ## Special values used in the hbv hashtables
+    hbv_inputs =   [ 0x0000000000000000
+                   , 0x0000000000000001
+                   , 0x000000000000000f
+                   , 0xffffffff00000000
+                   , 0xffffffffffffffff
+                   , 0xfffffffffffffff5
+                   , 0x1055555510333333 ]
+
+    ## Some probably useful values
+
+    inputs = hbv_inputs + [ 0x00000000ffffffff, 0x5555555555555555, 0xaaaaaaaaaaaaaaaa, 
+                            0x3333333333333333, 0xcccccccccccccccc, 0x0f0f0f0f0f0f0f0f, 0xf0f0f0f0f0f0f0f0, 
+                            0x00ff00ff00ff00ff, 0xff00ff00ff00ff00, 0x0000ffff0000ffff, 0xffff0000ffff0000 ]
 
     outputs = []
 
