@@ -15,6 +15,7 @@ import           System.IO (stdout, stderr, hPutStrLn)
 
 import           Data.BV
 import qualified Data.BV.BruteForce as BF
+import qualified Data.BV.BruterForce as BRF
 import qualified Data.BV.SMT as SMT
 import           Data.BV.Explore
 import           Data.BV.SMTEval (progEquivInfo)
@@ -30,6 +31,7 @@ main = do
       (_, Eval)       -> evalStdin
       (_, SMT)        -> smtStdin (all args)
       (_, BruteForce) -> bfStdin (all args)
+      (_, RBruteForce) -> brfStdin (all args)
       (_, Compare)    -> compareStdin
       (_, QC)         -> checkProps
 
@@ -41,13 +43,14 @@ data HbvArgs = HbvArgs {
   , perms   :: Int
   } deriving (Show, Data, Typeable)
 
-data HbvMode = Eval | SMT | BruteForce | Compare | QC
+data HbvMode = Eval | SMT | BruteForce | RBruteForce | Compare | QC
   deriving (Show, Data, Typeable)
 
 hbvArgs = HbvArgs {
     hbvMode = enum [ Eval       &= help "Evaluate program from stdin (default)"
                    , SMT        &= help "Solve problem from stdin using SMT solver"
                    , BruteForce &= help "Solve problem from stdin using brute-force solver"
+                   , RBruteForce &= help "Solve problem from stdin using bruter-force solver"
                    , Compare    &= help "Compare two programs from stdin for equivalence"
                    , QC         &= help "QuickCheck self test"
                    ]
@@ -93,6 +96,9 @@ evalStdin = do
 
 bfStdin :: Bool -> IO ()
 bfStdin = solverStdin BF.solve
+
+brfStdin :: Bool -> IO ()
+brfStdin = solverStdin BRF.solve
 
 smtStdin :: Bool -> IO ()
 smtStdin = solverStdin SMT.solve

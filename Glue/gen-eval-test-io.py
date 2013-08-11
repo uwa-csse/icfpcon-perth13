@@ -10,7 +10,7 @@ training = True ##   ## Don't make it live unless you mean it!!  Let's keep a pe
 ##################
 
 if (len(sys.argv) != 2):
-	print "usage: %s <size>", sys.argv[0]
+	print "usage: %s <size>" % sys.argv[0]
 	exit (1)
 
 s = Server()
@@ -48,7 +48,8 @@ for prob in probs:
     inout_fname = logdir + "/%02d-%s-%s.inout" % (prob['size'], opstr1, prob['id'])
 
     inout_file = open(inout_fname, 'w')
-#    inout_file.write("# %s\n" % prob['challenge'])
+    if training:
+            inout_file.write("# %s\n" % prob['challenge'])
 
     inout_file.write("%d %s\n" % (prob['size'], opstr2))
 
