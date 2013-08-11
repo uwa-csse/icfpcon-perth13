@@ -78,6 +78,7 @@ let (|BinOp|_|) binop =
     | "and" -> Some And
     | "plus" -> Some Plus
     | _ -> None
+let makeExpr (ex:Expr) : ExprChild = {id = -1; level = 255uy; e = ex}
 
 let parseProgram stream = 
     let rec parseTok vars = function
@@ -85,15 +86,15 @@ let parseProgram stream =
         | One -> Atom(Type.One)
         | Id(i) when Map.containsKey i vars -> Atom(Type.Id(Map.find i vars))
         | Expr(Id("if0") :: cond :: tExp :: fExpr :: []) ->
-            If0(parseTok vars cond, parseTok vars tExp, parseTok vars fExpr)
+            If0(parseTok vars cond |> makeExpr, parseTok vars tExp |> makeExpr, parseTok vars fExpr |> makeExpr)
         | Expr(Id("fold") :: a :: b :: Expr(Id("lambda") :: Expr(Id(arg1) :: Id(arg2) :: []) :: body :: []) :: []) ->
             let parsedA = parseTok vars a
             let parsedB = parseTok vars b
-            Fold((parsedA, parsedB), parseTok ( vars.Add (arg1, Type.Y) |> Map.add arg2 Type.Z ) body)
+            Fold((parsedA |> makeExpr, parsedB |> makeExpr), parseTok ( vars.Add (arg1, Type.Y) |> Map.add arg2 Type.Z ) body |> makeExpr)
         | Expr(Id(BinOp(op)) :: a :: b :: []) ->
-            Binary(op, parseTok vars a, parseTok vars b)
+            Binary(op, parseTok vars a |> makeExpr, parseTok vars b |> makeExpr)
         | Expr(Id(UnOp(op)) :: a :: []) ->
-            Unary(op, parseTok vars a)
+            Unary(op, parseTok vars a |> makeExpr)
         | Expr(a :: []) -> parseTok vars a
         | a -> printfn "%A" a; failwith "Invalid expr"
     match lexify (List.ofSeq stream) with

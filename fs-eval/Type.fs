@@ -33,10 +33,12 @@ type Atomic =
 ///Program Expressions. Note: Lambdas are special cases
 type Expr = 
     | Atom of Atomic
-    | If0 of Expr * Expr * Expr
-    | Fold of (Expr * Expr) * Expr
-    | Unary of UnOp * Expr
-    | Binary of BinOp * Expr * Expr
+    | If0 of ExprChild * ExprChild * ExprChild
+    | Fold of (ExprChild * ExprChild) * ExprChild
+    | Unary of UnOp * ExprChild
+    | Binary of BinOp * ExprChild * ExprChild
+and ExprChild = { id : int; level : byte; e : Expr }
+
 
 
 type Prog = Expr
