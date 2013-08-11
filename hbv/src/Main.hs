@@ -16,7 +16,7 @@ import           System.IO (stdout, stderr, hPutStrLn)
 
 import           Data.BV
 import qualified Data.BV.BruteForce as BF
---import qualified Data.BV.BruterForce as BRF
+import qualified Data.BV.RBruteForce as RBF
 import qualified Data.BV.SMT as SMT
 import           Data.BV.Explore
 import           Data.BV.SMTEval (progEquivInfo, exprEquivInfo)
@@ -34,7 +34,7 @@ main = do
       (0, Eval)        -> evalStdin
       (0, SMT)         -> smtStdin (all args)
       (0, BruteForce)  -> bfStdin (all args)
-      --(0, RBruteForce) -> brfStdin (all args)
+      (0, RBruteForce) -> rbfStdin (all args)
       (0, Compare)     -> compareStdin
       (0, QC)          -> checkProps
       (depth, _)       -> findPerms depth
@@ -101,8 +101,19 @@ evalStdin = do
 bfStdin :: Bool -> IO ()
 bfStdin = solverStdin BF.solve
 
---brfStdin :: Bool -> IO ()
---brfStdin = solverStdin BRF.solve
+rbfStdin :: Bool -> IO ()
+rbfStdin b = do smallProbCache <- loadSmallProbs
+                solverStdin (RBF.solve smallProbCache) b
+           
+loadSmallProbs :: IO [[Expr]]
+loadSmallProbs = do cs <- readFile "perms7.txt"  -- should be cmd line arg
+                    let ls = lines cs
+                    foldr go (return [])  ls    
+                 where go l b = do  (case parse l of 
+                                         Left _ -> hPutStrLn stderr ("hbv: error in smallProbs file")   
+                                         Right cp -> cp)
+                                       b
+                          ls
 
 smtStdin :: Bool -> IO ()
 smtStdin = solverStdin SMT.solve
